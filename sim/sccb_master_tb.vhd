@@ -37,15 +37,15 @@ use work.all;
 
 
 
-entity i2c_master_tb is
+entity sccb_master_tb is
 --  Port ( );
-end i2c_master_tb;
+end sccb_master_tb;
 
-architecture Behavioral of i2c_master_tb is
+architecture Behavioral of sccb_master_tb is
 
 
 
-COMPONENT i2c_master is
+COMPONENT sccb_master is
     port(
     rst : in std_logic;
     clk : in std_logic;
@@ -88,7 +88,7 @@ signal write_data : std_logic_vector(7 downto 0);
 constant ClockPeriod : time := 10ns;
 begin
 
-i2c_m : i2c_master
+sccb_m : sccb_master
         PORT MAP (
           clk => clk,
           rst => rst,
@@ -103,7 +103,7 @@ i2c_m : i2c_master
         );
 
 clk <= not clk after ClockPeriod/2;
-scl <= 'H';
+-- I2C Mode scl <= 'H';
 mosi_miso <= 'H';
     stimuli : process
     begin

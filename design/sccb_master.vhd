@@ -21,7 +21,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity i2c_master is
+entity sccb_master is
 port(
     rst : in std_logic;
     clk : in std_logic;
@@ -37,9 +37,9 @@ port(
     
     );
 
-end i2c_master;
+end sccb_master;
 
-architecture Behavioral of i2c_master is
+architecture Behavioral of sccb_master is
 
 
 
@@ -108,19 +108,15 @@ port map(
             scl_quarter => scl_quarter
  );
  
- with scl_gen OR not_start select sclk <=
-		'Z' when '1',
-		'0' when '0',
-		'Z' when others;
-		
--- case scl_gen OR not_start
---	when '1' =>
---		sclk <= 'Z';
---   when '0'
---		sclk <= '0';
--- end case;
- 
--- sclk <= scl_gen OR not_start;
+
+sclk <= scl_gen OR not_start;
+
+ -- I2C Mode 
+-- with scl_gen OR not_start select sclk <=
+--		'Z' when '1',
+--		'0' when '0',
+--		'Z' when others;
+--		
  
 process(clk, rst)
 begin
@@ -175,12 +171,18 @@ if(clk'event and clk='1') then
             
             
         elsif state = ON_CONT then
-           if ((scl_quarter = NXT) and (change = '1')) then
-                state <= ADDRESS;
+           
+			  if (scl_quarter = STABLE) then
+					not_start <= '0';
+			
+				
+            elsif ((scl_quarter = NXT) and (change = '1')) then
+                
+					 state <= ADDRESS;
 					 addr_reg(0) <= rw_reg;
-           else
+				else
                 state <= ON_CONT;
-           end if;
+				end if;
            
         elsif state = SLV_ACK then
             if((scl_quarter = NXT) and (change = '1')) then
@@ -283,11 +285,19 @@ if(clk'event and clk='1') then
             
       elsif STATE = OFF_END then
             if (scl_quarter = NXT) and (change = '1') then
-                STATE <= RESET;
-					 toggle <= '1'; -- Turn off SCL Clock
-					 not_start <= '1';
+				
+					if (FRAME = FRAME_3) then
+						STATE <= ON_CONT;
+					else
+					-- If Frame = '1' then OFF, else if Frame = '3' then repeated.
+						STATE <= RESET;
+						toggle <= '1'; -- Turn off SCL Clock
+						not_start <= '1';
+					end if;
+				
+				
             elsif (scl_quarter = STABLE) then
-					 not_start <= '1';
+					not_start <= '1';
 				else
                 STATE <= OFF_END;
             end if;

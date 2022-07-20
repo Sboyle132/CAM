@@ -286,9 +286,7 @@ if(clk'event and clk='1') then
                 STATE <= RESET;
 					 toggle <= '1'; -- Turn off SCL Clock
 					 not_start <= '1';
-            elsif (scl_quarter = STABLE) then
-					 not_start <= '1';
-				else
+            else
                 STATE <= OFF_END;
             end if;
 		
