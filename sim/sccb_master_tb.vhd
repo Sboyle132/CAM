@@ -167,8 +167,8 @@ mosi_miso <= 'H';
 		  
 		  --Ack 1
         wait for ClockPeriod * 7;
-        mosi_miso <= '0';
-        driver <= '0';
+        mosi_miso <= 'Z';
+        driver <= 'Z';
         wait for ClockPeriod * 16;  -- these 16s can be replaced by generics.;
         mosi_miso <= 'Z';
         driver <= 'Z';
@@ -217,8 +217,8 @@ mosi_miso <= 'H';
         mosi_miso <= 'Z';
         driver <= 'Z';
 		  --Ack 2
-		  --Repeated start
-		  wait for ClockPeriod * 16;
+		  --Stop and start
+		  wait for ClockPeriod * 16 * 2;
 		  
 		  --Frame 3
         wait for ClockPeriod * 12; -- In line with stable.
@@ -258,8 +258,8 @@ mosi_miso <= 'H';
 		  --Frame 3 Complete
 		  
 		  --Ack 3
-        mosi_miso <= '0';
-        driver <= '0';
+        mosi_miso <= 'Z';
+        driver <= '1';
         wait for ClockPeriod * 16;
         mosi_miso <= 'Z';
         driver <= 'Z';
@@ -394,8 +394,8 @@ mosi_miso <= 'H';
 		  -- Frame 2 complete
 		  
 		  --Ack 2
-        mosi_miso <= '0';
-        driver <= '0';
+        mosi_miso <= 'Z';
+        driver <= 'Z';
         wait for ClockPeriod * 16;
         mosi_miso <= 'Z';
         driver <= 'Z';
@@ -441,8 +441,8 @@ mosi_miso <= 'H';
 		  enable <= '0';
 		  
 		  --Ack 4
-        mosi_miso <= '0';
-        driver <= '0';
+        mosi_miso <= 'Z';
+        driver <= 'Z';
         wait for ClockPeriod * 16;
         mosi_miso <= 'Z';
         driver <= 'Z';

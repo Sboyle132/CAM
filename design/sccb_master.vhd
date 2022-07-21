@@ -194,7 +194,7 @@ if(clk'event and clk='1') then
                     
                     elsif(FRAME = FRAME_2) then
                         if(rw_reg = MODE_R) then
-                            state <= ON_CONT;
+                            state <= OFF_END;
 									 FRAME <= FRAME_3;
       
                         else
@@ -285,11 +285,10 @@ if(clk'event and clk='1') then
             
       elsif STATE = OFF_END then
             if (scl_quarter = NXT) and (change = '1') then
-				
-					if (FRAME = FRAME_3) then
-						STATE <= ON_CONT;
-					else
 					-- If Frame = '1' then OFF, else if Frame = '3' then repeated.
+					if (FRAME = FRAME_3) then
+						STATE <= ON_CONT; -- For SCCB instead of repeated start on read, STOP then READ.
+					else
 						STATE <= RESET;
 						toggle <= '1'; -- Turn off SCL Clock
 						not_start <= '1';
@@ -438,11 +437,13 @@ if(clk'event and clk='1') then
             if(scl_quarter = STABLE and sample_point = '1') then
                 case(sdata) is
                     when 'H' | '1' =>
-                        sample_data <= '1';
+								--sample_data <= '1'; --I2C Specification
+                        sample_data <= '0';
                     when '0' =>
                         sample_data <= '0';
                     when others =>
-                        sample_data <= '1';
+                        --sample_data <= '1'; --I2C Specification.
+								sample_data <= '0';
                     end case;
             else
                 sample_data <= sample_data;
