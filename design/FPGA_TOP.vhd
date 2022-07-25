@@ -30,10 +30,10 @@ begin
 		counter <= (others =>'0');
 		led_array <= (others => '0');
 	elsif(clk'event and clk = '1') then
-		if(counter < 25000000) then
+		if(counter < 25000000/4) then
 			counter <= counter + '1';
 			led_array <= (others => '0');
-		elsif(counter > 50000000) then
+		elsif(counter > 50000000/4) then
 			counter <= (others=>'0');
 		else
 			led_array <= (others => '1');
