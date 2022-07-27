@@ -64,7 +64,7 @@ end component;
 begin
 scl_generator1 : entity work.scl_generator
         generic map (
-                threshold => 4
+                threshold => 16
                 )
         port map( 
             rst => rst,

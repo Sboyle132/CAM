@@ -87,19 +87,28 @@ if (rising_edge(clk) and clk = '1') then
             scl_generator <='0';    
         end if;
         
-        if(scl_generator = '1' and count > half_threshold-'1') then
-            if((count > upper_threshold - 1)) then -- or (count = x"0000"))  then
-                scl_quarter <= "11";
-            else
-                scl_quarter <= "10";
-            end if;
-        else
-            if(count > quarter_threshold - 1) then
-                scl_quarter <= "01";
-            else
-                scl_quarter <= "00";
-            end if;
-        end if;
+		  if(count > upper_threshold - '1') then
+			scl_quarter <= "11";
+		  elsif (count > half_threshold - '1') then
+			scl_quarter <= "10";
+		  elsif (count > quarter_threshold - '1') then
+			scl_quarter <= "01";
+		  else
+			scl_quarter <= "00";
+		  end if;
+--        if(scl_generator = '1' and count > half_threshold-'1') then
+--            if((count > upper_threshold - 1)) then -- or (count = x"0000"))  then
+--                scl_quarter <= "11";
+--            else
+--                scl_quarter <= "10";
+--            end if;
+--        else
+--            if(count > quarter_threshold - 1) then
+--                scl_quarter <= "01";
+--            else
+--                scl_quarter <= "00";
+--            end if;
+--        end if;
             
 end if;
 end if;

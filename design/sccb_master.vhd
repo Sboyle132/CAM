@@ -22,6 +22,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity sccb_master is
+generic ( 
+				frequency : integer := 200000
+);
 port(
     rst : in std_logic;
     clk : in std_logic;
@@ -49,7 +52,7 @@ SIGNAL State : State_Type;
 
 component scl_generator is
     generic ( 
-        threshold : integer := 16
+        threshold : integer := 250
     );
     port (
         rst : in std_logic;
@@ -100,6 +103,9 @@ signal read_reg : std_logic_vector(7 downto 0);
 begin 
 
 scl_generator1 : scl_generator
+generic map (
+				threshold => 50000000/frequency
+				)
 port map( 
             rst => rst,
             clk => clk,
@@ -109,13 +115,13 @@ port map(
  );
  
 
-sclk <= scl_gen OR not_start;
+--sclk <= scl_gen OR not_start;
 
  -- I2C Mode 
--- with scl_gen OR not_start select sclk <=
---		'Z' when '1',
---		'0' when '0',
---		'Z' when others;
+ with scl_gen OR not_start select sclk <=
+		'Z' when '1',
+		'0' when '0',
+		'Z' when others;
 --		
  
 process(clk, rst)
@@ -134,7 +140,8 @@ if(clk'event and clk='1') then
         addr_reg <= x"00";
         raddr_reg <= x"00";
         write_reg <= x"00";        
-        FRAME <= FRAME_1;
+        o_data <= x"00";
+		  FRAME <= FRAME_1;
     else
         if(toggle = '1') then -- Toggling on scl_generator should only be for 1 clock cycle.
             toggle <= '0';
@@ -292,6 +299,9 @@ if(clk'event and clk='1') then
 						STATE <= RESET;
 						toggle <= '1'; -- Turn off SCL Clock
 						not_start <= '1';
+						if( rw_reg = MODE_R) then
+							o_data <= read_reg;
+						end if;
 					end if;
 				
 				
@@ -363,6 +373,8 @@ if(clk'event and clk='1') then
         sdata <= 'Z';
         sample_data <= '1';
         read_reg <= x"00";
+		  --o_data <= x"00";
+
     else
     
     -- To only sample on 1 clock in final half of positive clock
@@ -438,13 +450,16 @@ if(clk'event and clk='1') then
                 case(sdata) is
                     when 'H' | '1' =>
 								--sample_data <= '1'; --I2C Specification
+								--o_data <= "1111111" & '1'; 
                         sample_data <= '0';
                     when '0' =>
                         sample_data <= '0';
+								--o_data <= "1111111" & '0';
                     when others =>
                         --sample_data <= '1'; --I2C Specification.
 								sample_data <= '0';
                     end case;
+					
             else
                 sample_data <= sample_data;
             end if;

@@ -46,6 +46,9 @@ architecture Behavioral of sccb_master_tb is
 
 
 COMPONENT sccb_master is
+	 generic (
+	 frequency : integer
+				);
     port(
     rst : in std_logic;
     clk : in std_logic;
@@ -62,6 +65,12 @@ COMPONENT sccb_master is
 
 
 END COMPONENT;
+
+
+--Enter frequency here
+constant freq : integer := 10000;
+constant period : integer := 50000000/freq;
+
 
 
 signal clk : std_logic := '0';
@@ -89,6 +98,9 @@ constant ClockPeriod : time := 10ns;
 begin
 
 sccb_m : sccb_master
+		  generic map(
+					frequency => freq
+					)
         PORT MAP (
           clk => clk,
           rst => rst,
@@ -103,7 +115,8 @@ sccb_m : sccb_master
         );
 
 clk <= not clk after ClockPeriod/2;
--- I2C Mode scl <= 'H';
+-- I2C Mode 
+scl <= 'H'; --
 mosi_miso <= 'H';
     stimuli : process
     begin
@@ -126,141 +139,141 @@ mosi_miso <= 'H';
         wait for ClockPeriod;
         enable <= '0';
         --First start condition
-		  wait for ClockPeriod * 16;
+		  wait for ClockPeriod * period;
 		  --First start condition
 		  --Frame 1
 		  
-		  wait for ClockPeriod * 12; -- In line with stable.
+		  wait for ClockPeriod * ((period * 3)/4); -- In line with stable.
 		  read_devaddr(7) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(7) <= read_devaddr(7);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(6) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(6) <= read_devaddr(6);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(5) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(5) <= read_devaddr(5);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(4) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(4) <= read_devaddr(4);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(3) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(3) <= read_devaddr(3);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(2) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(2) <= read_devaddr(2);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(1) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(1) <= read_devaddr(1);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(0) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(0) <= read_devaddr(0);
-		  wait for ClockPeriod * 5;
+		  wait for ClockPeriod * (period/4);
 		  -- Frame 1 complete.
 		  
 		  --Ack 1
-        wait for ClockPeriod * 7;
+        wait for ClockPeriod * period/2;
         mosi_miso <= 'Z';
         driver <= 'Z';
-        wait for ClockPeriod * 16;  -- these 16s can be replaced by generics.;
+        wait for ClockPeriod * period;  -- these 16s can be replaced by generics.;
         mosi_miso <= 'Z';
         driver <= 'Z';
 		  --Ack 1
 		  
 		  -- Frame 2
-		  wait for ClockPeriod * 3;
+		  wait for ClockPeriod * period/4;
 		  read_regaddr(7) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(7) <= read_regaddr(7);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(6) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(6) <= read_regaddr(6);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(5) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(5) <= read_regaddr(5);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(4) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(4) <= read_regaddr(4);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(3) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(3) <= read_regaddr(3);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(2) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(2) <= read_regaddr(2);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(1) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(1) <= read_regaddr(1);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(0) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(0) <= read_regaddr(0);
-		  wait for ClockPeriod * 6;
+		  wait for ClockPeriod * period/2;
 		  -- Frame 2 complete
 		  
 		  --Ack 2
         mosi_miso <= '0';
         driver <= '0';
-        wait for ClockPeriod * 16;
+        wait for ClockPeriod * period;
         mosi_miso <= 'Z';
         driver <= 'Z';
 		  --Ack 2
 		  --Stop and start
-		  wait for ClockPeriod * 16 * 2;
+		  wait for ClockPeriod * period * 2;
 		  
 		  --Frame 3
-        wait for ClockPeriod * 12; -- In line with stable.
+        wait for ClockPeriod * period * 3/4; -- In line with stable.
 		  read_devaddr(7) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(7) <= read_devaddr(7);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(6) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(6) <= read_devaddr(6);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(5) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(5) <= read_devaddr(5);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(4) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(4) <= read_devaddr(4);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(3) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(3) <= read_devaddr(3);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(2) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(2) <= read_devaddr(2);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(1) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(1) <= read_devaddr(1);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(0) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(0) <= read_devaddr(0);
-		  wait for ClockPeriod * 4;
+		  wait for ClockPeriod * period/4;
 		  
 		  --Frame 3 Complete
 		  
 		  --Ack 3
         mosi_miso <= 'Z';
         driver <= '1';
-        wait for ClockPeriod * 16;
+        wait for ClockPeriod * period;
         mosi_miso <= 'Z';
         driver <= 'Z';
 		  -- Ack 3
@@ -268,30 +281,30 @@ mosi_miso <= 'H';
 		 --Frame 4 - Read from tb
 		  wait for ClockPeriod* 7;
 		  mosi_miso <= read_data(7);
-		  wait for ClockPeriod * 16;
+		  wait for ClockPeriod * period;
 		  mosi_miso <= read_data(6);
-		  wait for ClockPeriod * 16;
+		  wait for ClockPeriod * period;
 		  mosi_miso <= read_data(5);
-		  wait for ClockPeriod * 16;
+		  wait for ClockPeriod * period;
 		  mosi_miso <= read_data(4);
-		  wait for ClockPeriod * 16;
+		  wait for ClockPeriod * period;
 		  mosi_miso <= read_data(3);
-		  wait for ClockPeriod * 16;
+		  wait for ClockPeriod * period;
 		  mosi_miso <= read_data(2);
-		  wait for ClockPeriod * 16;
+		  wait for ClockPeriod * period;
 		  mosi_miso <= read_data(1);
-		  wait for ClockPeriod * 16;
+		  wait for ClockPeriod * period;
 		  mosi_miso <= read_data(0);
-		  wait for ClockPeriod * 9;
+		  wait for ClockPeriod * period/2;
 		  mosi_miso <= 'Z';
 		  --Frame 4 - Complete
 		  
 		  --Master NACK
-		  wait for ClockPeriod * 12;
+		  wait for ClockPeriod * period*(3/4);
 		  nack_check <= mosi_miso;
 		  wait for ClockPeriod;
 		  nack_check <= nack_check;
-		  wait for ClockPeriod *3;
+		  wait for ClockPeriod * (period/4);
 		  -- Nack complete
 		  
 		  --Return to idle state.
@@ -309,132 +322,132 @@ mosi_miso <= 'H';
 		  
 		  
         --First start condition
-		  wait for ClockPeriod * 16;
+		  wait for ClockPeriod * period;
 		  --First start condition
 		  
 		  --Frame 1
-		  wait for ClockPeriod * 13; -- In line with stable.
+		  wait for ClockPeriod * period*(3/4); -- In line with stable.
 		  read_devaddr(7) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(7) <= read_devaddr(7);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(6) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(6) <= read_devaddr(6);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(5) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(5) <= read_devaddr(5);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(4) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(4) <= read_devaddr(4);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(3) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(3) <= read_devaddr(3);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(2) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(2) <= read_devaddr(2);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(1) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(1) <= read_devaddr(1);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_devaddr(0) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_devaddr(0) <= read_devaddr(0);
-		  wait for ClockPeriod * 5;
+		  wait for ClockPeriod * period/4;
 		  -- Frame 1 complete.
 		  
 		  --Ack 1
-        wait for ClockPeriod * 7;
+        wait for ClockPeriod * period/2;
         mosi_miso <= '0';
         driver <= '0';
-        wait for ClockPeriod * 16;  -- these 16s can be replaced by generics.;
+        wait for ClockPeriod * period;  -- these 16s can be replaced by generics.;
         mosi_miso <= 'Z';
         driver <= 'Z';
 		  --Ack 1
 		  
 		  -- Frame 2
-		  wait for ClockPeriod * 3;
+		  wait for ClockPeriod * period/4;
 		  read_regaddr(7) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(7) <= read_regaddr(7);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(6) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(6) <= read_regaddr(6);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(5) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(5) <= read_regaddr(5);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(4) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(4) <= read_regaddr(4);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(3) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(3) <= read_regaddr(3);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(2) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(2) <= read_regaddr(2);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(1) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(1) <= read_regaddr(1);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  read_regaddr(0) <= mosi_miso;
 		  wait for ClockPeriod;
 		  read_regaddr(0) <= read_regaddr(0);
-		  wait for ClockPeriod * 6;
+		  wait for ClockPeriod * period/2;
 		  -- Frame 2 complete
 		  
 		  --Ack 2
         mosi_miso <= 'Z';
         driver <= 'Z';
-        wait for ClockPeriod * 16;
+        wait for ClockPeriod * period;
         mosi_miso <= 'Z';
         driver <= 'Z';
 		  --Ack 2
 
 		  -- Frame 4 (Skipped 3)
-		  wait for ClockPeriod * 7;
+		  wait for ClockPeriod * period/2;
 		  write_data(7) <= mosi_miso;
 		  wait for ClockPeriod;
 		  write_data(7) <= write_data(7);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  write_data(6) <= mosi_miso;
 		  wait for ClockPeriod;
 		  write_data(6) <= write_data(6);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  write_data(5) <= mosi_miso;
 		  wait for ClockPeriod;
 		  write_data(5) <= write_data(5);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  write_data(4) <= mosi_miso;
 		  wait for ClockPeriod;
 		  write_data(4) <= write_data(4);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  write_data(3) <= mosi_miso;
 		  wait for ClockPeriod;
 		  write_data(3) <= write_data(3);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  write_data(2) <= mosi_miso;
 		  wait for ClockPeriod;
 		  write_data(2) <= write_data(2);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  write_data(1) <= mosi_miso;
 		  wait for ClockPeriod;
 		  write_data(1) <= write_data(1);
-		  wait for ClockPeriod * 15;
+		  wait for ClockPeriod * period - 1ns;
 		  write_data(0) <= mosi_miso;
 		  wait for ClockPeriod;
 		  write_data(0) <= write_data(0);
-		  wait for ClockPeriod * 6;
+		  wait for ClockPeriod * period/2;
 		  -- Frame 4 complete
 		  -- ensure idle
 		  
@@ -443,78 +456,15 @@ mosi_miso <= 'H';
 		  --Ack 4
         mosi_miso <= 'Z';
         driver <= 'Z';
-        wait for ClockPeriod * 16;
+        wait for ClockPeriod * period;
         mosi_miso <= 'Z';
         driver <= 'Z';
 		  --Ack 4
 		  -- Return to idle state.
-		  wait for ClockPeriod * 16 * 10;
+		  wait for ClockPeriod * period * 10;
 		  
 		  
 		  
-		  
-		  
-		  
-		  
-		  
-		  
-		  
-		  
-		  
-		  
-		  
-		  
-		  
---        enable <= '0';
---        wait for ClockPeriod *16*8;
-
---        wait for ClockPeriod *16;
---     --   miso <= '1';
---        wait for ClockPeriod *16;
---     --   miso <= '1';
---        wait for ClockPeriod *16;
---        miso <= '0';
---        wait for ClockPeriod *16;
---        miso <= '1';
---        wait for ClockPeriod *16;
---        miso <= '0';
---        wait for ClockPeriod *16;
---        miso <= '1';
---        wait for ClockPeriod *16;
---        miso <= '1';
---        wait for ClockPeriod *16;
---        wait for ClockPeriod *16;
---        wait for ClockPeriod *16;
---        wait for ClockPeriod * 4;
---        addr <= "0011001";
---        data <= "00000000";
---        miso <= '0';
---        rw <= '0';
---        enable <= '1';
-
---        wait for ClockPeriod;
-        
---        enable <= '0';
---        wait for ClockPeriod *16*8;
-
---        wait for ClockPeriod *16;
---        miso <= '0';
---        wait for ClockPeriod *16;
---        miso <= '1';
---        wait for ClockPeriod *16;
---        miso <= '0';
---        wait for ClockPeriod *16;
---        miso <= '1';
---        wait for ClockPeriod *16;
---        miso <= '1';
---        wait for ClockPeriod *16;
---        miso <= '0';
---        wait for ClockPeriod *16;
---        miso <= '1';
---        wait for ClockPeriod *16;
---        wait for ClockPeriod *16;
---        wait for ClockPeriod *16;
-
     end process stimuli;
 
 end Behavioral;
