@@ -140,7 +140,7 @@ if(clk'event and clk='1') then
         addr_reg <= x"00";
         raddr_reg <= x"00";
         write_reg <= x"00";        
-        o_data <= x"00";
+       -- o_data <= x"00";
 		  FRAME <= FRAME_1;
     else
         if(toggle = '1') then -- Toggling on scl_generator should only be for 1 clock cycle.
@@ -300,7 +300,7 @@ if(clk'event and clk='1') then
 						toggle <= '1'; -- Turn off SCL Clock
 						not_start <= '1';
 						if( rw_reg = MODE_R) then
-							o_data <= read_reg;
+						--o_data <= read_reg;
 						end if;
 					end if;
 				
@@ -373,7 +373,7 @@ if(clk'event and clk='1') then
         sdata <= 'Z';
         sample_data <= '1';
         read_reg <= x"00";
-		  --o_data <= x"00";
+		  o_data <= x"00";
 
     else
     
@@ -450,11 +450,11 @@ if(clk'event and clk='1') then
                 case(sdata) is
                     when 'H' | '1' =>
 								--sample_data <= '1'; --I2C Specification
-								--o_data <= "1111111" & '1'; 
+								o_data <= x"00"; 
                         sample_data <= '0';
                     when '0' =>
                         sample_data <= '0';
-								--o_data <= "1111111" & '0';
+								o_data <= x"11";
                     when others =>
                         --sample_data <= '1'; --I2C Specification.
 								sample_data <= '0';
