@@ -22,6 +22,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity i2c_master is
+generic ( 
+				frequency : integer := 200000
+);
 port(
     rst : in std_logic;
     clk : in std_logic;
@@ -100,6 +103,9 @@ signal read_reg : std_logic_vector(7 downto 0);
 begin 
 
 scl_generator1 : scl_generator
+generic map (
+				threshold => 50000000/frequency
+			)
 port map( 
             rst => rst,
             clk => clk,
@@ -137,7 +143,8 @@ if(clk'event and clk='1') then
         state <= RESET;
         addr_reg <= x"00";
         raddr_reg <= x"00";
-        write_reg <= x"00";        
+        write_reg <= x"00";
+		  o_data <= x"00";        
         FRAME <= FRAME_1;
     else
         if(toggle = '1') then -- Toggling on scl_generator should only be for 1 clock cycle.
@@ -283,12 +290,16 @@ if(clk'event and clk='1') then
             
       elsif STATE = OFF_END then
             if (scl_quarter = NXT) and (change = '1') then
-                STATE <= RESET;
+					if(rw_reg = '1') then
+						o_data <= read_reg;
+					 end if;
+					 STATE <= RESET;
 					 toggle <= '1'; -- Turn off SCL Clock
 					 not_start <= '1';
             elsif (scl_quarter = STABLE) then
 					 not_start <= '1';
 				else
+				
                 STATE <= OFF_END;
             end if;
 		

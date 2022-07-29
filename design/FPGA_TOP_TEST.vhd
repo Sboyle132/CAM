@@ -4,7 +4,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.numeric_std.all;
 use IEEE.std_logic_unsigned.all;
 
-entity FPGA_TOP is 
+entity FPGA_TOP_TEST is 
 
 port (
 
@@ -26,7 +26,7 @@ cam_vsync : in std_logic
 
 end FPGA_TOP;
 
-architecture FPGA_TOP_ARCH of FPGA_TOP is
+architecture FPGA_TOP_ARCH of FPGA_TOP_TEST is
 
 
 COMPONENT sccb_master is
@@ -90,32 +90,32 @@ end component;
 	constant xclk_freq : integer := 25000000/2;
 	signal cam_clktoggle : std_logic;
 	signal cam_clkquarter : std_logic_vector(1 downto 0);
-	
+	signal state_counter : std_logic_vector(10 downto 0);
 	signal led_array : std_logic_vector(7 downto 0);
 	signal counter : std_logic_vector(26 downto 0);
 	
-	TYPE State_type IS (IDLE, INIT, SENDING, SEND2, READING);
+	TYPE State_type IS (IDLE, INIT, TRANS_BEGIN);
 	SIGNAL State : State_Type;
 	
 begin
-
-	sccb_m : sccb_master
-		generic map(
-			frequency => sccb_freq 
-		)
-		PORT MAP (
-			clk => clk,
-			rst => rst_gen,
-			dev => sccb_dev,
-			r_w => sccb_rw,
-			dev_reg => sccb_devreg,
-			data_w => sccb_wdata,
-			o_data => sccb_odata,
-			enable => sccb_enable,
-			sdata => cam_sdata,
-			sclk => cam_scl
-		);
-		
+--
+--	sccb_m : sccb_master
+--		generic map(
+--			frequency => sccb_freq 
+--		)
+--		PORT MAP (
+--			clk => clk,
+--			rst => rst_gen,
+--			dev => sccb_dev,
+--			r_w => sccb_rw,
+--			dev_reg => sccb_devreg,
+--			data_w => sccb_wdata,
+--			o_data => sccb_odata,
+--			enable => sccb_enable,
+--			sdata => cam_sdata,
+--			sclk => cam_scl
+--		);
+--		
 	scl_generator1 : scl_generator
 		generic map (
 				threshold => (50000000/xclk_freq)
@@ -153,6 +153,7 @@ begin
 		sccb_wdata <= x"00";
 		sccb_enable <= '0';
 		counter <= (others => '0');
+		state_counter <= (others => '0');
 		cam_reset <= '0';
 		cam_pwdn <= '0';
 		cam_clktoggle <= '0';
@@ -160,86 +161,42 @@ begin
 		
 	
 	elsif(clk'event and clk = '1') then
-	
-		if(cam_pclk = '0') then
-			pixel_check <= '1';
-		end if;
-		
-		if(cam_pclk = '1') then
-			pixel_check2 <= '1';
-		end if;
 		
 		
 		
 		
 		
-		if(counter > 50000000 / test_factor) then
+		
+		if(counter > 4999 / test_factor) then
 			counter <= (others => '0');
 		else
 			counter <= counter + '1';
 		end if;
+		
+		
 		case(STATE) is
 		
-        when INIT =>	--led_array <= sccb_odata;
-	--cam_xclk <= cam_xclk
+        when INIT =>
 		  
-				if(counter > 50000000 / test_factor) then
-					STATE <= SENDING;
-					cam_clktoggle <= '0';
-					sccb_enable <= '1';
-
-				
-				elsif (counter = 25000000 / test_factor) then
-					cam_clktoggle <= '1';
-	
-
-					
-				else
-		-- Fill in device registers and information
-					sccb_dev <= x"6" & "000";
-					sccb_rw <= '0';
-					sccb_devreg <= x"FF";
-					sccb_wdata <= x"01";
-					counter <= counter + '1';
+				if(counter > 4999) then
 					cam_reset <= '1';
 					cam_pwdn <= '0';
+					cam_clktoggle <= '1';
+					state_counter <= (others => '0');
 				end if;
-					
-		  when SENDING =>
-				-- Fill in address change between sending / receiving on state change (probably '1')
-				if(counter > 50000000 / test_factor) then
-					STATE <= SEND2;
-					sccb_enable <= '1';
-				else
-					sccb_enable <= '0';
-					sccb_devreg <= x"12";
-					sccb_wdata <= x"40";
-					sccb_rw <= '0';
 
 					
-				end if;
-				-- Fill in changes also.				sccb_enable <= '1';
-
-		  when SEND2 =>
-				if(counter > 50000000 / test_factor) then
-					STATE <= READING;
-					sccb_enable <= '1';
-				else
-					sccb_enable <= '0';
-					sccb_devreg <= x"0A";
-					sccb_wdata <= x"01";
-					sccb_rw <= '1';
+			when trans_begin =>
+				if(counter > 4999 / test_factor) then
+					state_counter <= state_counter + '1';
 				end if;
 				
-		  when READING =>
-				if(counter > 50000000 / test_factor) then
-					STATE <= IDLE;
-					sccb_enable <= '0';
-					sccb_devreg <= sccb_devreg + '1';
-				else
-					sccb_enable <= '0';
-		
-				end if;
+				if (state_counter = '0'); --
+					-- Can use OR for 8 at time. Maybe setting this non propogation is important but i dont think so.
+				
+			-- also set registers before and can cycle through Do not forget MSB first
+				
+				
 		  
 		  
 		 when OTHERS =>

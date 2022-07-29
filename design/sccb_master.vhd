@@ -34,7 +34,7 @@ port(
     o_data : out std_logic_vector(7 downto 0);
     r_w : in std_logic;
     enable : in std_logic;
-    sclk : inout std_logic;
+    sclk : out std_logic;
   --  d_out : out std_logic;
     sdata : inout std_logic
     
@@ -115,13 +115,13 @@ port map(
  );
  
 
---sclk <= scl_gen OR not_start;
+sclk <= scl_gen OR not_start;
 
  -- I2C Mode 
- with scl_gen OR not_start select sclk <=
-		'Z' when '1',
-		'0' when '0',
-		'Z' when others;
+-- with scl_gen OR not_start select sclk <=
+--		'Z' when '1',
+--		'0' when '0',
+--		'Z' when others;
 --		
  
 process(clk, rst)
@@ -140,7 +140,7 @@ if(clk'event and clk='1') then
         addr_reg <= x"00";
         raddr_reg <= x"00";
         write_reg <= x"00";        
-       -- o_data <= x"00";
+        o_data <= x"00";
 		  FRAME <= FRAME_1;
     else
         if(toggle = '1') then -- Toggling on scl_generator should only be for 1 clock cycle.
@@ -300,7 +300,7 @@ if(clk'event and clk='1') then
 						toggle <= '1'; -- Turn off SCL Clock
 						not_start <= '1';
 						if( rw_reg = MODE_R) then
-						--o_data <= read_reg;
+							o_data <= read_reg;
 						end if;
 					end if;
 				
@@ -373,7 +373,7 @@ if(clk'event and clk='1') then
         sdata <= 'Z';
         sample_data <= '1';
         read_reg <= x"00";
-		  o_data <= x"00";
+		  --o_data <= x"00";
 
     else
     
@@ -399,12 +399,12 @@ if(clk'event and clk='1') then
 					 sample_data <= '0';
             else
 				    sample_data <= '1';
-                sdata <= 'Z';
+                sdata <= '1';
             end if;
         when OFF_END =>
             sample_data <= '0';
             if(scl_quarter = STABLE) or (((scl_quarter = FALL) or (scl_quarter = NXT)) and (change = '1')) then
-                sdata <= 'Z';
+                sdata <= '1';
             else
                 sdata <= '0';
             end if;
@@ -428,7 +428,9 @@ if(clk'event and clk='1') then
             if((scl_quarter = STABLE) and sample_point = '1') then
             
             case(sdata) is
-                when 'H' | '1' =>
+                when 'H' =>
+								read_reg(7 - to_integer(unsigned(count))) <= '1';
+					 when '1' =>
                         read_reg(7 - to_integer(unsigned(count))) <= '1'; -- NEEDS TO BE MSB FIRST ALL SAMPLES SHOULD BE PUT TO 1
                 when '0' =>
                         read_reg(7 - to_integer(unsigned(count))) <= '0';
@@ -448,13 +450,13 @@ if(clk'event and clk='1') then
             sdata <= 'Z';
             if(scl_quarter = STABLE and sample_point = '1') then
                 case(sdata) is
-                    when 'H' | '1' =>
-								--sample_data <= '1'; --I2C Specification
-								o_data <= x"00"; 
+                    when 'H' =>
+								sample_data <= '0';
+						  when '1' =>
                         sample_data <= '0';
                     when '0' =>
                         sample_data <= '0';
-								o_data <= x"11";
+								--o_data <= x"11";
                     when others =>
                         --sample_data <= '1'; --I2C Specification.
 								sample_data <= '0';

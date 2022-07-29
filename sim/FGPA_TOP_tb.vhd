@@ -22,7 +22,7 @@ COMPONENT FPGA_TOP is
 	rst_n : in std_logic;
 	clk : in std_logic; -- 50 Mhz
 	led : out std_logic_vector(7 downto 0);
-	cam_scl : inout std_logic;
+	cam_scl : out std_logic;
 	cam_sdata : inout std_logic;
 	cam_reset : out std_logic;
 	cam_pwdn : out std_logic;
@@ -75,7 +75,7 @@ clk <= not clk after ClockPeriod/2;
 
 -- SCCB in I2C Mode 
 cam_sdata <= 'H';
-cam_scl <= 'H';
+--cam_scl <= 'H';
 
 stimuli : process
     begin

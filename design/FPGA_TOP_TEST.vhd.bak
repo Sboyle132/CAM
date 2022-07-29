@@ -226,7 +226,7 @@ begin
 					sccb_enable <= '1';
 				else
 					sccb_enable <= '0';
-					sccb_devreg <= x"0A";
+					sccb_devreg <= x"12";
 					sccb_wdata <= x"01";
 					sccb_rw <= '1';
 				end if;
