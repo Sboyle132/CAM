@@ -28,7 +28,16 @@ end FPGA_TOP;
 
 architecture FPGA_TOP_ARCH of FPGA_TOP is
 
-
+COMPONENT INIT_RAM is
+	port(
+		clk : in std_logic;
+		rst : in std_logic;
+		address : in std_logic_vector(7 downto 0);
+		data : out std_logic_vector(15 downto 0);
+		finished : out std_logic
+	);
+END COMPONENT;
+	
 COMPONENT sccb_master is
 	 generic (
 				frequency : integer
@@ -68,7 +77,7 @@ end component;
 	constant test_sccb_mul : integer := 1;  --1  -- Good starting point is 50
 	
 -- Camera SCCB configuration.
-	constant sccb_freq : integer := 10000 * test_sccb_mul;
+	constant sccb_freq : integer := 400000 * test_sccb_mul;
 	
 	
 	signal sccb_dev : std_logic_vector(6 downto 0);
@@ -83,14 +92,26 @@ end component;
 	-- Camera
 --	signal cam_rst : std_logic;
 --	signal cam_pwdn : std_logic;
-	signal pixel_check : std_logic := '0';
-	signal pixel_check2 : std_logic := '0';
+--	signal pixel_check : std_logic := '0';
+--	signal pixel_check2 : std_logic := '0';
+	signal pixel_check_1 : std_logic_vector(3 downto 0);
+	signal pixel_check_2 : std_logic_vector(3 downto 0);
+	signal pon_counter : std_logic_vector(26 downto 0);
+	signal poff_counter : std_logic_vector(26 downto 0);
+	--- Cam
 	signal sig_xclk : std_logic;
 	
 	constant xclk_freq : integer := 25000000/2;
 	signal cam_clktoggle : std_logic;
 	signal cam_clkquarter : std_logic_vector(1 downto 0);
+	-- Config sccb
+	signal config_addr : std_logic_vector(7 downto 0);
+	signal config_data : std_logic_vector(15 downto 0);
+	signal config_end : std_logic;
+	signal config_counter : std_logic;
 	
+	
+	-- TOP
 	signal led_array : std_logic_vector(7 downto 0);
 	signal counter : std_logic_vector(26 downto 0);
 	
@@ -98,6 +119,16 @@ end component;
 	SIGNAL State : State_Type;
 	
 begin
+
+
+	cam_ram : INIT_RAM
+			PORT MAP(
+				clk => clk,
+				rst => rst_gen,
+				address => config_addr,
+				data =>	config_data,
+				finished => config_end
+			);
 
 	sccb_m : sccb_master
 		generic map(
@@ -138,7 +169,8 @@ begin
 	--cam_scl <= sccb_sclk;
 	--cam_sdata <= sccb_sdata;
 	led_array <= sccb_odata(7 downto 0);
---	led_array <= pixel_check & pixel_check2 & "000000";
+	--Pclk test
+	--led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
 
 
 
@@ -157,89 +189,105 @@ begin
 		cam_pwdn <= '0';
 		cam_clktoggle <= '0';
 		STATE <= INIT;
+		pon_counter <= (others => '0');
+		poff_counter <= (others => '0');
+		pixel_check_1 <= (others => '0');
+		pixel_check_2 <= (others => '0');
+		config_addr <= (others => '0');
 		
-	
 	elsif(clk'event and clk = '1') then
 	
+	--Testing PCLK
 		if(cam_pclk = '0') then
-			pixel_check <= '1';
+			poff_counter <= poff_counter + '1';
+			if(poff_counter > 25000000) then
+				poff_counter <= (others => '0');
+				pixel_check_2 <= pixel_check_2 + '1';
+			end if;
 		end if;
 		
 		if(cam_pclk = '1') then
-			pixel_check2 <= '1';
+			pon_counter <= pon_counter + '1';
+			if(pon_counter > 25000000) then
+				pon_counter <= (others => '0');
+				pixel_check_1 <= pixel_check_1 + '1';
+			end if;
 		end if;
 		
 		
 		
 		
 		
-		if(counter > 50000000 / test_factor) then
-			counter <= (others => '0');
-		else
-			counter <= counter + '1';
-		end if;
+
+
 		case(STATE) is
 		
         when INIT =>	--led_array <= sccb_odata;
 	--cam_xclk <= cam_xclk
 		  
-				if(counter > 50000000 / test_factor) then
+				if(counter > 100000 / test_factor) then
+					counter <= (others => '0');
 					STATE <= SENDING;
 					cam_clktoggle <= '0';
-					sccb_enable <= '1';
-
-				
-				elsif (counter = 25000000 / test_factor) then
-					cam_clktoggle <= '1';
-	
-
+					sccb_enable <= '0';
+					sccb_dev <= x"6" & "000";
+					sccb_rw <= '0';
 					
 				else
 		-- Fill in device registers and information
-					sccb_dev <= x"6" & "000";
-					sccb_rw <= '0';
-					sccb_devreg <= x"FF";
-					sccb_wdata <= x"01";
+					
 					counter <= counter + '1';
 					cam_reset <= '1';
 					cam_pwdn <= '0';
+					cam_clktoggle <= '1';
+
 				end if;
 					
 		  when SENDING =>
 				-- Fill in address change between sending / receiving on state change (probably '1')
-				if(counter > 50000000 / test_factor) then
-					STATE <= SEND2;
+				if(counter > 10000 / test_factor) then
+					counter <= (others => '0');
+					STATE <= SENDING;
 					sccb_enable <= '1';
-				else
-					sccb_enable <= '0';
-					sccb_devreg <= x"12";
-					sccb_wdata <= x"40";
+					config_addr <= config_addr + '1';
+					if(config_end = '1') then
+						STATE <= IDLE;
+					end if;
+					
+				elsif(counter = 5000) then
+					sccb_devreg <= config_data(15 downto 8);
+					sccb_wdata <= config_data(7 downto 0);
 					sccb_rw <= '0';
+					counter <= counter + '1';
+
+				else
+					counter <= counter + '1';
+					sccb_enable <= '0';
+
 
 					
 				end if;
 				-- Fill in changes also.				sccb_enable <= '1';
-
-		  when SEND2 =>
-				if(counter > 50000000 / test_factor) then
-					STATE <= READING;
-					sccb_enable <= '1';
-				else
-					sccb_enable <= '0';
-					sccb_devreg <= x"0A";
-					sccb_wdata <= x"01";
-					sccb_rw <= '1';
-				end if;
-				
-		  when READING =>
-				if(counter > 50000000 / test_factor) then
-					STATE <= IDLE;
-					sccb_enable <= '0';
-					sccb_devreg <= sccb_devreg + '1';
-				else
-					sccb_enable <= '0';
-		
-				end if;
+--
+--		  when SEND2 =>
+--				if(counter > 50000000 / test_factor) then
+--					STATE <= READING;
+--					sccb_enable <= '1';
+--				else
+--					sccb_enable <= '0';
+--					sccb_devreg <= x"12";
+--					sccb_wdata <= x"40";
+--					sccb_rw <= '0';
+--				end if;
+--				
+--		  when READING =>
+--				if(counter > 50000000 / test_factor) then
+--					STATE <= IDLE;
+--					sccb_enable <= '0';
+--				else
+--					sccb_enable <= '0';
+--		
+--				end if;
 		  
 		  
 		 when OTHERS =>
