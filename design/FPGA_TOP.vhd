@@ -32,7 +32,7 @@ COMPONENT INIT_RAM is
 	port(
 		clk : in std_logic;
 		rst : in std_logic;
-		address : in std_logic_vector(7 downto 0);
+		address : in std_logic_vector(8 downto 0);
 		data : out std_logic_vector(15 downto 0);
 		finished : out std_logic
 	);
@@ -101,11 +101,11 @@ end component;
 	--- Cam
 	signal sig_xclk : std_logic;
 	
-	constant xclk_freq : integer := 25000000/2;
+	constant xclk_freq : integer := 25000000/1;
 	signal cam_clktoggle : std_logic;
 	signal cam_clkquarter : std_logic_vector(1 downto 0);
 	-- Config sccb
-	signal config_addr : std_logic_vector(7 downto 0);
+	signal config_addr : std_logic_vector(8 downto 0);
 	signal config_data : std_logic_vector(15 downto 0);
 	signal config_end : std_logic;
 	signal config_counter : std_logic;
@@ -168,9 +168,9 @@ begin
 	led <= led_array;
 	--cam_scl <= sccb_sclk;
 	--cam_sdata <= sccb_sdata;
-	led_array <= sccb_odata(7 downto 0);
+	--led_array <= sccb_odata(7 downto 0);
 	--Pclk test
-	--led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
+	led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
 
 
 
@@ -198,6 +198,8 @@ begin
 	elsif(clk'event and clk = '1') then
 	
 	--Testing PCLK
+	
+	if(cam_href = '1') then
 		if(cam_pclk = '0') then
 			poff_counter <= poff_counter + '1';
 			if(poff_counter > 25000000) then
@@ -213,8 +215,7 @@ begin
 				pixel_check_1 <= pixel_check_1 + '1';
 			end if;
 		end if;
-		
-		
+	end if;
 		
 		
 		
@@ -247,11 +248,13 @@ begin
 				-- Fill in address change between sending / receiving on state change (probably '1')
 				if(counter > 10000 / test_factor) then
 					counter <= (others => '0');
-					STATE <= SENDING;
-					sccb_enable <= '1';
-					config_addr <= config_addr + '1';
+					
 					if(config_end = '1') then
 						STATE <= IDLE;
+					else
+						STATE <= SENDING;
+						sccb_enable <= '1';
+						config_addr <= config_addr + '1';
 					end if;
 					
 				elsif(counter = 5000) then
@@ -259,6 +262,8 @@ begin
 					sccb_wdata <= config_data(7 downto 0);
 					sccb_rw <= '0';
 					counter <= counter + '1';
+					
+
 
 				else
 					counter <= counter + '1';
