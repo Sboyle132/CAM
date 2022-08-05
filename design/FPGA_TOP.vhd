@@ -121,206 +121,206 @@ end component;
 begin
 
 
-led(5 downto 0) <= "111111";
+--led(7 downto 0) <= "11111111";
 
---	cam_ram : INIT_RAM
---			PORT MAP(
---				clk => clk,
---				rst => rst_gen,
---				address => config_addr,
---				data =>	config_data,
---				finished => config_end
---			);
+	cam_ram : INIT_RAM
+			PORT MAP(
+				clk => clk,
+				rst => rst_gen,
+				address => config_addr,
+				data =>	config_data,
+				finished => config_end
+			);
+
+	sccb_m : sccb_master
+		generic map(
+			frequency => sccb_freq 
+		)
+		PORT MAP (
+			clk => clk,
+			rst => rst_gen,
+			dev => sccb_dev,
+			r_w => sccb_rw,
+			dev_reg => sccb_devreg,
+			data_w => sccb_wdata,
+			o_data => sccb_odata,
+			enable => sccb_enable,
+			sdata => cam_sdata,
+			sclk => cam_scl
+		);
+		
+	scl_generator1 : scl_generator
+		generic map (
+				threshold => (50000000/xclk_freq)
+				)
+		port map( 
+            rst => rst_gen,
+            clk => clk,
+            scl_gen => sig_xclk,
+            toggle => cam_clktoggle,
+            scl_quarter => cam_clkquarter
+		);	
+	
+
+	with rst_n select rst_gen <=
+		'0' when '1',
+		'1' when '0',
+		'0' when others;
+	
+	cam_xclk <= sig_xclk;
+	led <= led_array;
+	--cam_scl <= sccb_sclk;
+	--cam_sdata <= sccb_sdata;
+	--led_array <= sccb_odata(7 downto 0);
+	--Pclk test
+	led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
+
+
+
+
+process(clk, rst_n)
+begin
+	
+	if(rst_gen = '1') then
+		sccb_dev <= x"0" & "000";
+		sccb_rw <= '0';
+		sccb_devreg <= x"00";
+		sccb_wdata <= x"00";
+		sccb_enable <= '0';
+		counter <= (others => '0');
+		cam_reset <= '0';
+		cam_pwdn <= '0';
+		cam_clktoggle <= '0';
+		STATE <= INIT;
+		pon_counter <= (others => '0');
+		poff_counter <= (others => '0');
+		pixel_check_1 <= (others => '0');
+		pixel_check_2 <= (others => '0');
+		config_addr <= (others => '0');
+		
+	elsif(clk'event and clk = '1') then
+	
+	--Testing PCLK
+	
+	if(cam_href = '1') then
+		if(sig_xclk = '0') then
+			poff_counter <= poff_counter + '1';
+			if(poff_counter > 25000000) then
+				poff_counter <= (others => '0');
+				pixel_check_2 <= pixel_check_2 + '1';
+			end if;
+		end if;
+		
+		if(sig_xclk = '1') then
+			pon_counter <= pon_counter + '1';
+			if(pon_counter > 25000000) then
+				pon_counter <= (others => '0');
+				pixel_check_1 <= pixel_check_1 + '1';
+			end if;
+		end if;
+	end if;
+		
+		
+		
+
+
+		case(STATE) is
+		
+        when INIT =>	--led_array <= sccb_odata;
+	--cam_xclk <= cam_xclk
+		  
+				if(counter > 100000 / test_factor) then
+					counter <= (others => '0');
+					STATE <= SENDING;
+					cam_clktoggle <= '0';
+					sccb_enable <= '0';
+					sccb_dev <= x"6" & "000";
+					sccb_rw <= '0';
+					
+				else
+		-- Fill in device registers and information
+					
+					counter <= counter + '1';
+					cam_reset <= '1';
+					cam_pwdn <= '0';
+					cam_clktoggle <= '1';
+
+				end if;
+					
+		  when SENDING =>
+				-- Fill in address change between sending / receiving on state change (probably '1')
+				if(counter > 10000 / test_factor) then
+					counter <= (others => '0');
+					
+					if(config_end = '1') then
+						STATE <= IDLE;
+					else
+						STATE <= SENDING;
+						sccb_enable <= '1';
+						config_addr <= config_addr + '1';
+					end if;
+					
+				elsif(counter = 5000) then
+					sccb_devreg <= config_data(15 downto 8);
+					sccb_wdata <= config_data(7 downto 0);
+					sccb_rw <= '0';
+					counter <= counter + '1';
+					
+
+
+				else
+					counter <= counter + '1';
+					sccb_enable <= '0';
+
+
+					
+				end if;
+				-- Fill in changes also.				sccb_enable <= '1';
 --
---	sccb_m : sccb_master
---		generic map(
---			frequency => sccb_freq 
---		)
---		PORT MAP (
---			clk => clk,
---			rst => rst_gen,
---			dev => sccb_dev,
---			r_w => sccb_rw,
---			dev_reg => sccb_devreg,
---			data_w => sccb_wdata,
---			o_data => sccb_odata,
---			enable => sccb_enable,
---			sdata => cam_sdata,
---			sclk => cam_scl
---		);
---		
---	scl_generator1 : scl_generator
---		generic map (
---				threshold => (50000000/xclk_freq)
---				)
---		port map( 
---            rst => rst_gen,
---            clk => clk,
---            scl_gen => sig_xclk,
---            toggle => cam_clktoggle,
---            scl_quarter => cam_clkquarter
---		);	
---	
---
---	with rst_n select rst_gen <=
---		'0' when '1',
---		'1' when '0',
---		'0' when others;
---	
---	cam_xclk <= sig_xclk;
---	led <= led_array;
---	--cam_scl <= sccb_sclk;
---	--cam_sdata <= sccb_sdata;
---	--led_array <= sccb_odata(7 downto 0);
---	--Pclk test
---	led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
---
---
---
---
---process(clk, rst_n)
---begin
---	
---	if(rst_gen = '1') then
---		sccb_dev <= x"0" & "000";
---		sccb_rw <= '0';
---		sccb_devreg <= x"00";
---		sccb_wdata <= x"00";
---		sccb_enable <= '0';
---		counter <= (others => '0');
---		cam_reset <= '0';
---		cam_pwdn <= '0';
---		cam_clktoggle <= '0';
---		STATE <= INIT;
---		pon_counter <= (others => '0');
---		poff_counter <= (others => '0');
---		pixel_check_1 <= (others => '0');
---		pixel_check_2 <= (others => '0');
---		config_addr <= (others => '0');
---		
---	elsif(clk'event and clk = '1') then
---	
---	--Testing PCLK
---	
---	if(cam_href = '1') then
---		if(sig_xclk = '0') then
---			poff_counter <= poff_counter + '1';
---			if(poff_counter > 25000000) then
---				poff_counter <= (others => '0');
---				pixel_check_2 <= pixel_check_2 + '1';
---			end if;
---		end if;
---		
---		if(sig_xclk = '1') then
---			pon_counter <= pon_counter + '1';
---			if(pon_counter > 25000000) then
---				pon_counter <= (others => '0');
---				pixel_check_1 <= pixel_check_1 + '1';
---			end if;
---		end if;
---	end if;
---		
---		
---		
---
---
---		case(STATE) is
---		
---        when INIT =>	--led_array <= sccb_odata;
---	--cam_xclk <= cam_xclk
---		  
---				if(counter > 100000 / test_factor) then
---					counter <= (others => '0');
---					STATE <= SENDING;
---					cam_clktoggle <= '0';
---					sccb_enable <= '0';
---					sccb_dev <= x"6" & "000";
---					sccb_rw <= '0';
---					
+--		  when SEND2 =>
+--				if(counter > 50000000 / test_factor) then
+--					STATE <= READING;
+--					sccb_enable <= '1';
 --				else
---		-- Fill in device registers and information
---					
---					counter <= counter + '1';
---					cam_reset <= '1';
---					cam_pwdn <= '0';
---					cam_clktoggle <= '1';
---
---				end if;
---					
---		  when SENDING =>
---				-- Fill in address change between sending / receiving on state change (probably '1')
---				if(counter > 10000 / test_factor) then
---					counter <= (others => '0');
---					
---					if(config_end = '1') then
---						STATE <= IDLE;
---					else
---						STATE <= SENDING;
---						sccb_enable <= '1';
---						config_addr <= config_addr + '1';
---					end if;
---					
---				elsif(counter = 5000) then
---					sccb_devreg <= config_data(15 downto 8);
---					sccb_wdata <= config_data(7 downto 0);
---					sccb_rw <= '0';
---					counter <= counter + '1';
---					
---
---
---				else
---					counter <= counter + '1';
 --					sccb_enable <= '0';
---
---
---					
+--					sccb_devreg <= x"12";
+--					sccb_wdata <= x"40";
+--					sccb_rw <= '0';
 --				end if;
---				-- Fill in changes also.				sccb_enable <= '1';
-----
-----		  when SEND2 =>
-----				if(counter > 50000000 / test_factor) then
-----					STATE <= READING;
-----					sccb_enable <= '1';
-----				else
-----					sccb_enable <= '0';
-----					sccb_devreg <= x"12";
-----					sccb_wdata <= x"40";
-----					sccb_rw <= '0';
-----				end if;
-----				
-----		  when READING =>
-----				if(counter > 50000000 / test_factor) then
-----					STATE <= IDLE;
-----					sccb_enable <= '0';
-----				else
-----					sccb_enable <= '0';
-----		
-----				end if;
---		  
---		  
---		 when OTHERS =>
---				sccb_enable <= '0';
---		 end case;
+--				
+--		  when READING =>
+--				if(counter > 50000000 / test_factor) then
+--					STATE <= IDLE;
+--					sccb_enable <= '0';
+--				else
+--					sccb_enable <= '0';
+--		
+--				end if;
+		  
+		  
+		 when OTHERS =>
+				sccb_enable <= '0';
+		 end case;
 	
 	
 	
 	
 
 
---		if(counter < 25000000/4) then
---			counter <= counter + '1';
---			led_array <= (others => '0');
---		elsif(counter > 50000000/4) then
---			counter <= (others=>'0');
---		else
---			led_array <= (others => '1');
---			counter <= counter + '1';
---		end if;
---			
+		if(counter < 25000000/4) then
+			counter <= counter + '1';
+			led_array <= (others => '0');
+		elsif(counter > 50000000/4) then
+			counter <= (others=>'0');
+		else
+			led_array <= (others => '1');
+			counter <= counter + '1';
+		end if;
+			
 	
---	end if;
+	end if;
 	
 
---end process;
+end process;
 
 end FPGA_TOP_ARCH;	
