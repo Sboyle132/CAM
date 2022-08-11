@@ -62,7 +62,7 @@ scl_quarter : out std_logic_vector(1 downto 0)
 end component;
 
 begin
-scl_generator1 : entity work.scl_generator
+scl_generator1 : entity scl_generator
         generic map (
                 threshold => 16
                 )

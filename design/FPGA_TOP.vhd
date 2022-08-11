@@ -253,7 +253,7 @@ begin
 					counter <= (others => '0');
 					
 					if(config_end = '1') then
-						STATE <= IDLE;
+						STATE <= READING;
 					else
 						STATE <= SENDING;
 						sccb_enable <= '1';
@@ -288,14 +288,26 @@ begin
 --					sccb_rw <= '0';
 --				end if;
 --				
---		  when READING =>
---				if(counter > 50000000 / test_factor) then
---					STATE <= IDLE;
---					sccb_enable <= '0';
---				else
---					sccb_enable <= '0';
---		
---				end if;
+		  when READING =>
+				if(counter > 10000 / test_factor) then
+					counter <= (others => '0');
+					STATE <= IDLE;
+					sccb_enable <= '1';
+				elsif(counter = 5000) then
+					sccb_devreg <= x"0B";
+					sccb_wdata <= x"00";
+					sccb_rw <= '1';
+					counter <= counter + '1';
+					
+
+
+				else
+					counter <= counter + '1';
+					sccb_enable <= '0';
+
+
+					
+				end if;
 		  
 		  
 		 when OTHERS =>

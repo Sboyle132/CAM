@@ -45,9 +45,9 @@ begin
 			when '0' & x"06" =>
 				data <= x"3c32";
 			when '0' & x"07" =>
-				data <= x"1101"; -- 01 MASTER -- 41 SLAVE
+				data <= x"1141"; -- 01 MASTER -- 41 SLAVE
 			when '0' & x"08" =>
-				data <= x"0902"; -- 06 SLV MODE -- 02 MASTER
+				data <= x"0906"; -- 06 SLV MODE -- 02 MASTER
 			when '0' & x"09" =>
 				data <= x"0428";
 			when '0' & x"0A" =>
@@ -135,7 +135,7 @@ begin
 			when '0' & x"33" =>
 				data <= x"73c1";
 			when '0' & x"34" =>
-				data <= x"1240"; -- 40 MASTER MODE -- 48 SLAVE MODE
+				data <= x"1248"; -- 40 MASTER MODE -- 48 SLAVE MODE
 			when '0' & x"35" =>
 				data <= x"1711";
 			when '0' & x"36" =>

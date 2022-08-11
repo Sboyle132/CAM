@@ -24,7 +24,7 @@ cam_vsync : in std_logic
 
 );
 
-end FPGA_TOP;
+end FPGA_TOP_TEST;
 
 architecture FPGA_TOP_ARCH of FPGA_TOP_TEST is
 

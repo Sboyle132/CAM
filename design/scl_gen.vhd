@@ -59,7 +59,7 @@ scl_gen <= scl_generator;
 
 process(clk, rst)
 begin
-if (rising_edge(clk) and clk = '1') then 
+if (clk'event and clk = '1') then 
     if (rst = '1') then
         scl_generator <= '0';
         count <= (others=>'0');
@@ -115,4 +115,14 @@ end if;
 
 end process;
 
+--Control frame count and MCLK count
+process(clk, rst)
+begin
+if(clk'event and clk='1') then
+	if(reset = '1') then
+	else
+	MCLK...
+end if;
+end if;
+end process;
 end Behavioral;
