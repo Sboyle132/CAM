@@ -114,7 +114,5 @@ end if;
 end if;
 
 end process;
-end if;
-end if;
-end process;
+
 end Behavioral;
