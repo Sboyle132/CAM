@@ -114,14 +114,6 @@ end if;
 end if;
 
 end process;
-
---Control frame count and MCLK count
-process(clk, rst)
-begin
-if(clk'event and clk='1') then
-	if(reset = '1') then
-	else
-	MCLK...
 end if;
 end if;
 end process;
