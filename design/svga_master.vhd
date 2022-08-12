@@ -87,7 +87,7 @@ constant HSYNC_PERIOD; -- Time of line
 TYPE State_type IS (IDLE, AKTIV);
 SIGNAL State : State_Type;
 
-TYPE Phase_type IS (VSYNC, V_REAR, V_FRONT, ROW_EN, SYNCHRONISE);
+TYPE Phase_type IS (VSYNC, V_REAR, V_FRONT, ROW_EN, SYNCHRONISE, IDLE);
 SIGNAL PHASE : Phase_Type;
 
 signal enable_change : std_logic;
@@ -165,7 +165,6 @@ begin
 			when AKTIV =>
 			--MCLK must be enabled  We also need to synchronise these changes in terms of MCLKs.
 					case(PHASE) is
-					
 						when SYNCHRONISE =>
 							VSYNC <= 0;
 							HSYNC <= 0;
@@ -173,7 +172,6 @@ begin
 							V_cyc <= (others => '0');
 						when VSYNC =>
 							VSYNC <= '1';
-							
 							if (mrise_twocyc = '1') then
 								H_cyc <= H_cyc + '1';
 								if(H_cyc < LINE_OFF) then
@@ -197,6 +195,8 @@ begin
 							VSYNC <= '0';
 						when ROW_EN =>
 							VSYNC <= '0';
+						when others =>
+						
 					end case;
 				-- New Line -> Gonna need second FSM.
 				
@@ -216,18 +216,28 @@ process(clk, rst)
 begin
 if(clk'event and clk='1') then
 	if(reset = '1') then
-		PHASE <= SYNCHRONISE;
+		PHASE <= IDLE;
 		count_cyc <= x"0000";
 		mclk_count <= (others => '0');
 		mrise_twocyc <= '0';
 		prev_mclk <= '0';
 		sync_start <= '0';
 	else
+		if enable = '1' and enable_change = '1' then
+			if(not PHASE = IDLE) then
+				STATE <= IDLE;
+			elsif(PHASE = IDLE) then
+				STATE <= SYNCHRONISE;
+				mclk_toggle <= '1';
+			else 
+				STATE <= STATE;
+				mclk_toggle <= '0';
+			end if;
 	
 	case(PHASE)
 	
 		when IDLE =>
-		
+
 		when SYNCHRONISE =>
 			prev_mclk <= mclk;
 			if(prev_mclk = '0' and mclk = '1') then
@@ -252,7 +262,7 @@ if(clk'event and clk='1') then
 				count_cyc <= (others => '0');
 			end if;
 			--Test whether VSNYC, mclk_count and rising MCLK edge align properly.
-		when AKTIV =>
+		when others =>
 			count_cyc <= count_cyc + '1';
 			--Case for 25MHZ
 			if(full_threshold = 2 and mclk = '1') then
@@ -278,7 +288,7 @@ if(clk'event and clk='1') then
 					end if;
 				when V_REAR =>
 					if(mclk_count = VSYNC_LINES + VREAR_LINES - '1') then
-						PHASE <= ROWN_EN;
+						PHASE <= ROW_EN;
 					end if;
 				when ROW_EN =>
 					if(mclk_count = VSYNC_LINES + VREAR_LINES + ROW_EN - '1') then
