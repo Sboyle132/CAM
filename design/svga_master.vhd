@@ -24,8 +24,10 @@ port(
 	 data_i : in std_logic_vector(9 downto 0);
 	 HREF : in std_logic;
 	 MHSYNC : out std_logic;
-	 MVSYNC : out std_logic
+	 MVSYNC : out std_logic;
 	 
+	 --debug
+	 sampled_out : out std_logic_vector(15 downto 0)
     );
 end svga_master;
 
@@ -98,7 +100,7 @@ SIGNAL PREV_PHASE : Phase_Type;
 SIGNAL PREV_STATE :State_Type;
 signal HREF_ACTIVE : std_logic;
 signal state_change : std_logic;
-signal sampled : std_logic;
+signal sample_next : std_logic;
 
 signal enable_change : std_logic;
 --signal LINE_COUNT std_logic_vector(16 downto 0);
@@ -244,27 +246,28 @@ if(clk'event and clk='1') then
 		data_valid <= '0';
 		sampled_count <= (others => '0');
 		HREF_ACTIVE <= '0';
-		sampled <= '0';
 	else
 		if(PHASE = ROW_EN) then
+		--Timing for sampling on rising edge of MCLK.
+			if(mrise_2cyc = '1') then
+				sample_next <= '1';
+			else
+				sample_next <= '0';
+			end if;
+			
 			if((H_cyc > HREF_START - 1) and (H_cyc < HREF_END)) then
 				HREF_ACTIVE <= '1';
-				if((sig_mclk = '1') and (sampled = '0')) then
-					sampled <= '1';
+				if(sample_next <= '1') then
 					data_o <= data_i;
 					data_valid <= '1';
 					if (HREF = '1') then
 						sampled_count <= sampled_count + '1';
+						sampled_out <= sampled_count;
 					end if;
-				elsif(sig_mclk = '0') then
-					sampled <= '0';
-					data_valid <= '0';
 				else
-					sampled <= sampled;
 					data_valid <= '0';
 				end if;
 			else
-				sampled <= '0';
 				data_valid <= '0';
 				sampled_count <= (others => '0');
 				HREF_ACTIVE <= '0';
@@ -277,6 +280,7 @@ end process;
 --Control frame count and MCLK count
 --Also control synchronisation of VSYNC, HSYNC WITH RISING EDGE OF MCLK.
 --Just for phase changes.
+--Process for synchronising between phase changes, VSYNC, Rear, front porches and data valid.
 process(clk, rst)
 begin
 if(clk'event and clk='1') then
@@ -308,6 +312,7 @@ if(clk'event and clk='1') then
 end if;
 end process;
 
+-- Process for phase control - VSYNC, Rear, front porches and data valid.
 process(clk, rst)
 begin
 if(clk'event and clk='1') then
