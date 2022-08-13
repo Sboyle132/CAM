@@ -18,7 +18,10 @@ port(
 	 enable : in std_logic;
 	 data_o : out std_logic_vector(9 downto 0);
 	 data_valid : out std_logic;
-	 
+	 frame_valid : out std_logic;
+	 frame_end : out std_logic;
+	 continue : in std_logic;
+	
 	 -- Interface
 	 mclk : out std_logic;
 	 data_i : in std_logic_vector(9 downto 0);
@@ -99,7 +102,6 @@ SIGNAL PHASE : Phase_Type;
 SIGNAL PREV_PHASE : Phase_Type;
 SIGNAL PREV_STATE :State_Type;
 signal HREF_ACTIVE : std_logic;
-signal state_change : std_logic;
 signal sample_next : std_logic;
 
 signal enable_change : std_logic;
@@ -127,6 +129,7 @@ begin
 	if	(rst='1') then
 		enable_change <= '1';
 		mclk_toggle <= '0';
+		STATE <= IDLE;
 	elsif (clk'event and clk='1') then
 		  if(enable = '1') then
             enable_change <= '0';
@@ -245,8 +248,11 @@ if(clk'event and clk='1') then
 		data_o <= (others => '0');
 		data_valid <= '0';
 		sampled_count <= (others => '0');
+		sampled_out <= (others => '0');
 		HREF_ACTIVE <= '0';
 	else
+		data_valid <= '0';
+		sample_next <= '0';
 		if(PHASE = ROW_EN) then
 		--Timing for sampling on rising edge of MCLK.
 			if(mrise_2cyc = '1') then
@@ -254,24 +260,25 @@ if(clk'event and clk='1') then
 			else
 				sample_next <= '0';
 			end if;
-			
 			if((H_cyc > HREF_START - 1) and (H_cyc < HREF_END)) then
 				HREF_ACTIVE <= '1';
-				if(sample_next <= '1') then
+				if(sample_next = '1') then
 					data_o <= data_i;
 					data_valid <= '1';
 					if (HREF = '1') then
 						sampled_count <= sampled_count + '1';
 						sampled_out <= sampled_count;
 					end if;
-				else
-					data_valid <= '0';
 				end if;
 			else
-				data_valid <= '0';
 				sampled_count <= (others => '0');
 				HREF_ACTIVE <= '0';
 			end if;
+		else
+			data_o <= (others => '0');
+			data_valid <= '0';
+			sampled_count <= (others => '0');
+			HREF_ACTIVE <= '0';
 		end if;
 	end if;
 	
@@ -324,7 +331,10 @@ if(clk'event and clk='1') then
 		prev_mclk <= '0';
 		H_cyc <= x"0000";
 		sync_start <= '0';
+		frame_valid <= '0';
+		frame_end <= '0';
 	else
+		frame_end <= '0';
 		if(not (PHASE = IDLE) and (STATE = IDLE)) then
 			PHASE <= IDLE;
 		elsif(PHASE = IDLE and STATE = AKTIV) then
@@ -335,7 +345,16 @@ if(clk'event and clk='1') then
 	case(PHASE) is
 	
 		when IDLE =>
-
+			count_cyc <= x"0000";
+			mclk_count <= (others => '0');
+			mrise_2cyc <= '0';
+			prev_mclk <= '0';
+			H_cyc <= x"0000";
+			sync_start <= '0';
+			frame_valid <= '0';
+			frame_end <= '0';
+			
+			
 		when SYNCHRONISE =>
 			prev_mclk <= sig_mclk;
 			if(prev_mclk = '0' and sig_mclk = '1') then
@@ -344,25 +363,32 @@ if(clk'event and clk='1') then
 				--Ignore next cycle sync_start since 25MHZ leaves not enough time.
 				if(full_threshold = 2 and sig_mclk = '1') then
 					PHASE <= VSYNC;
+					if(continue = '1') then
+						frame_valid <= '1';
+					else
+						frame_valid <= '0';
+					end if;
 					sync_start <= '0';
 					count_cyc <= x"0000";
 					H_cyc <= x"0000";
-					sync_start <= '0';
 					mrise_2cyc <= '1';
-
 				end if;
-				--Sync start as normal, in this case count_cyc entering should be 1 as one cycle is used to update sync_start value
+			--Sync start as normal, in this case count_cyc entering should be 1 as one cycle is used to update sync_start value
 			elsif (sync_start <= '1') then
 				count_cyc <= count_cyc + '1';
 				--Two cycles until VSNYC is one, one to enter phase, one to switch VSYNC Active.
 				--On counter = '0' MCLK is still one, so FULL_THRESHOLD - 1 is still applicable. -- Check this
 				if((count_cyc + 1) = full_threshold - 1) then
 					PHASE <= VSYNC;
+					if(continue = '1') then
+						frame_valid <= '1';
+					else
+						frame_valid <= '0';
+					end if;
 					H_cyc <= x"0000";
 					sync_start <= '0';
 					mrise_2cyc <= '1';
 					count_cyc <= x"0000";
-					sync_start <= '0';
 				end if;
 			else
 				count_cyc <= (others => '0');
@@ -410,10 +436,17 @@ if(clk'event and clk='1') then
 				when ROW_EN =>
 					if(mclk_count = VSYNC_LINES + VREAR_LINES + ROW_EN_LINES) then
 						PHASE <= V_FRONT;
+						frame_end <= '1';
 					end if;
 				when V_FRONT =>
 					if(mclk_count = VSYNC_LINES + VREAR_LINES + ROW_EN_LINES + VFRONT_LINES) then
-							PHASE <= VSYNC;
+							if(continue = '1') then
+								PHASE <= VSYNC;
+								frame_valid <= '1';
+							else
+								PHASE <= VSYNC;
+								frame_valid <= '0';
+							end if;
 							mclk_count <= (others => '0');
 							H_cyc <= (others => '0');
 							

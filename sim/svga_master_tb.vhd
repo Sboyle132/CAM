@@ -26,6 +26,9 @@ COMPONENT svga_master is
 	 enable : in std_logic;
 	 data_o : out std_logic_vector(9 downto 0);
 	 data_valid : out std_logic;
+	 continue : in std_logic;
+	 frame_valid : out std_logic;
+	 frame_end : out std_logic;
 	 
 	 -- Interface
 	 mclk : out std_logic;
@@ -46,7 +49,9 @@ signal data_i : std_logic_vector(9 downto 0);
 signal HREF : std_logic;
 signal MHSYNC : std_logic;
 signal MVSYNC : std_logic;
-
+signal continue : std_logic;
+signal frame_valid : std_logic;
+signal frame_end : std_logic;
 
 constant ClockPeriod : time := 10ns;
 constant Clockfreq : integer := 672*1190*2;
@@ -67,8 +72,13 @@ SVGA_MASTER0 : SVGA_MASTER
 			data_i => data_i,
 			HREF => HREF,
 			MHSYNC => MHSYNC,
-			MVSYNC => MVSYNC
+			MVSYNC => MVSYNC,
+			continue => continue,
+			frame_valid => frame_valid,
+			frame_end => frame_end
 		);
+		
+		
 				
 clk <= not clk after ClockPeriod/2;
 
@@ -78,18 +88,17 @@ stimuli : process
       wait for ClockPeriod;
       rst <= '0';
 		wait for ClockPeriod * 10; 
+		continue <= '1';
+		data_i <= "11" & x"11";
 		enable <= '1';
 		wait for ClockPeriod * 1;
 		enable <= '0';
 		wait for ClockPeriod * Clockfreq;
-		enable <= '1';
-		wait for ClockPeriod;
-		enable <= '0';
-		wait for ClockPeriod;
-		enable <= '1';
-		wait for ClockPeriod;
-		enable <= '0';
-		wait for ClockPeriod * Clockfreq;
+		continue <= '0';
+		wait for ClockPeriod * 1000;
+		wait for ClockPeriod * Clockfreq * 2;
+		continue <= '1';
+		wait for ClockPeriod * Clockfreq * 2;
 	   end process stimuli;
 
 end Behavioral;

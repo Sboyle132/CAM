@@ -171,9 +171,9 @@ begin
 	led <= led_array;
 	--cam_scl <= sccb_sclk;
 	--cam_sdata <= sccb_sdata;
-	--led_array <= sccb_odata(7 downto 0);
+	led_array <= sccb_odata(7 downto 0);
 	--Pclk test
-	led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
+	--led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
 
 
 
@@ -243,7 +243,7 @@ begin
 					counter <= counter + '1';
 					cam_reset <= '1';
 					cam_pwdn <= '0';
-					cam_clktoggle <= '1';
+					cam_clktoggle <= '0';
 
 				end if;
 					
@@ -318,16 +318,16 @@ begin
 	
 	
 
-
-		if(counter < 25000000/4) then
-			counter <= counter + '1';
-			led_array <= (others => '0');
-		elsif(counter > 50000000/4) then
-			counter <= (others=>'0');
-		else
-			led_array <= (others => '1');
-			counter <= counter + '1';
-		end if;
+--
+--		if(counter < 25000000/4) then
+--			counter <= counter + '1';
+--			led_array <= (others => '0');
+--		elsif(counter > 50000000/4) then
+--			counter <= (others=>'0');
+--		else
+--			led_array <= (others => '1');
+--			counter <= counter + '1';
+--		end if;
 			
 	
 	end if;
