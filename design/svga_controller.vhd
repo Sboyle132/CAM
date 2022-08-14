@@ -28,7 +28,7 @@ port(
 	 transfer_complete : out std_logic;
 
 	 -- Interface
-	 mclk : out std_logic;
+	 mclk : in std_logic;
 	 data_i : in std_logic_vector(9 downto 0);
 	 HREF : in std_logic;
 	 MHSYNC : out std_logic;
@@ -69,7 +69,7 @@ COMPONENT svga_master is
 	 frame_end : out std_logic;
 	 
 	 -- Interface
-	 mclk : out std_logic;
+	 mclk : in std_logic;
 	 data_i : in std_logic_vector(9 downto 0);
 	 HREF : in std_logic;
 	 MHSYNC : out std_logic;

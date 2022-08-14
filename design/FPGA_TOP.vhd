@@ -62,7 +62,7 @@ COMPONENT svga_controller is
 	 transfer_complete : out std_logic;
 
 	 -- Interface
-	 mclk : out std_logic;
+	 mclk : in std_logic;
 	 data_i : in std_logic_vector(9 downto 0);
 	 HREF : in std_logic;
 	 MHSYNC : out std_logic;
@@ -228,7 +228,7 @@ begin
 		port map( 
             rst => rst_gen,
             clk => clk,
-      --      scl_gen => sig_xclk,
+            scl_gen => sig_xclk,
             toggle => cam_clktoggle,
             scl_quarter => cam_clkquarter
 		);	

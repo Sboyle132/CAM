@@ -23,7 +23,7 @@ port(
 	 continue : in std_logic;
 	
 	 -- Interface
-	 mclk : out std_logic;
+	 mclk : in std_logic;
 	 data_i : in std_logic_vector(9 downto 0);
 	 HREF : in std_logic;
 	 MHSYNC : out std_logic;
@@ -67,7 +67,7 @@ signal count_cyc : std_logic_vector(15 downto 0);
 signal mclk_count : std_logic_vector(31 downto 0);
 signal mrise_2cyc : std_logic;
 --mclk buffer
-signal sig_mclk : std_logic;
+--signal sig_mclk : std_logic;
 signal prev_mclk : std_logic;
 
 signal sync_start : std_logic;
@@ -108,20 +108,21 @@ signal enable_change : std_logic;
 --signal LINE_COUNT std_logic_vector(16 downto 0);
 signal mclk_toggle : std_logic;
 
-signal mclk_quarter : std_logic_vector(1 downto 0);
+--signal mclk_quarter : std_logic_vector(1 downto 0);
 begin
-scl_generator_svga : scl_generator
-		generic map (
-				threshold => (50000000/mclk_freq)
-				)
-		port map( 
-            rst => rst,
-            clk => clk,
-            scl_gen => sig_mclk,
-            toggle => mclk_toggle,
-            scl_quarter => mclk_quarter
-		);
-mclk <= sig_mclk;		
+
+--scl_generator_svga : scl_generator-
+--		generic map (
+--				threshold => (50000000/mclk_freq)
+--				)
+--		port map( 
+ --           rst => rst,
+  --          clk => clk,
+  --          scl_gen => sig_mclk,
+   --         toggle => mclk_toggle,
+    --        scl_quarter => mclk_quarter
+	--	);
+--mclk <= sig_mclk;		
 		
 -- FSM controller process.
 process(rst, clk)
@@ -356,12 +357,12 @@ if(clk'event and clk='1') then
 			
 			
 		when SYNCHRONISE =>
-			prev_mclk <= sig_mclk;
-			if(prev_mclk = '0' and sig_mclk = '1') then
+			prev_mclk <= mclk;
+			if(prev_mclk = '0' and mclk = '1') then
 				sync_start <= '1';
 				count_cyc <=	x"0001"; 
 				--Ignore next cycle sync_start since 25MHZ leaves not enough time.
-				if(full_threshold = 2 and sig_mclk = '1') then
+				if(full_threshold = 2 and mclk = '1') then
 					PHASE <= VSYNC;
 					if(continue = '1') then
 						frame_valid <= '1';
@@ -398,7 +399,7 @@ if(clk'event and clk='1') then
 		when others =>
 			count_cyc <= count_cyc + '1';
 			--Case for 25MHZ
-			if(full_threshold = 2 and sig_mclk = '1') then
+			if(full_threshold = 2 and mclk = '1') then
 				mrise_2cyc <= '1';
 				count_cyc <= x"0000";
 				mclk_count <= mclk_count + '1';
@@ -423,7 +424,7 @@ if(clk'event and clk='1') then
 			end if;
 			--When we enter next cycle MCLK is 1 (next cycle, we are 1 behind). So  should be 0.
 			--We also need to apply PHASE Change here to avoid losing a clock cycle.
-			if((full_threshold = 2 and sig_mclk='1') or ((mclk_count = full_threshold - 1) and (not (full_threshold = 2)))) then
+			if((full_threshold = 2 and mclk='1') or ((mclk_count = full_threshold - 1) and (not (full_threshold = 2)))) then
 				CASE(PHASE) is
 				when VSYNC =>
 					if(mclk_count = VSYNC_LINES) then
