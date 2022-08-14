@@ -173,7 +173,7 @@ begin
 	--cam_sdata <= sccb_sdata;
 	led_array <= sccb_odata(7 downto 0);
 	--Pclk test
-	--led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
+-- led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
 
 
 
@@ -243,7 +243,7 @@ begin
 					counter <= counter + '1';
 					cam_reset <= '1';
 					cam_pwdn <= '0';
-					cam_clktoggle <= '0';
+					cam_clktoggle <= '1';
 
 				end if;
 					
@@ -318,8 +318,8 @@ begin
 	
 	
 
---
---		if(counter < 25000000/4) then
+
+		--if(counter < 25000000/4) then
 --			counter <= counter + '1';
 --			led_array <= (others => '0');
 --		elsif(counter > 50000000/4) then
@@ -335,4 +335,4 @@ begin
 
 end process;
 
-end FPGA_TOP_ARCH;	
+end FPGA_TOP_ARCH;		
