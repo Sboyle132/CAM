@@ -48,8 +48,6 @@ end svga_controller;
 architecture svga_controller_arch of svga_controller is
 
 --Output/input buffers
-signal address_buffer : std_logic_vector(31 downto 0);
-signal size_buffer : std_logic_vector(31 downto 0);
 --MHSYNC, VSYNC Validity
 signal initialised : std_logic;
 
@@ -177,8 +175,6 @@ process(clk, rst)
 begin
 if(clk'event and clk='1') then
 	if(rst = '1') then
-		address_buffer <= (others => '0'); --Increment by frame size.
-		size_buffer <= (others => '0'); -- Decrement by 1.
 		initialised <= '0';
 		OUT_STATE <= WAITING;
 	else
@@ -207,7 +203,7 @@ if(clk'event and clk='1') then
 			sig_continue <= '0';
 			transfer_complete <= '0';
 	else
-		transfer_complete <= '1';
+		transfer_complete <= '0';
 		if(size > x"00000000") then
 			sig_continue <= '1';
 			if(sig_word_send = '1') then
@@ -235,8 +231,6 @@ begin
 if(clk'event and clk='1') then
 	
 	if(rst = '1') then
-		address_buffer <= (others => '0');
-		size_buffer <= (others => '0');
 		out_counter <= (others => '0');
 		offset <= (others => '0');
 		word_offset <= x"0";
@@ -248,8 +242,6 @@ if(clk'event and clk='1') then
 		case(OUT_STATE) is
 			
 			when WAITING =>
-				address_buffer <= (others => '0');
-				size_buffer <= (others => '0');
 				out_counter <= (others => '0');
 				offset <= (others => '0');
 				word_offset <= x"0";
@@ -264,11 +256,11 @@ if(clk'event and clk='1') then
 				if(data_valid = '1' and frame_valid = '1') then
 					out_counter <= out_counter + '1';
 					if(out_counter < 3) then
-						word_o((8*(to_integer(unsigned(out_counter))+1) - 1) downto (8*to_integer(unsigned(out_counter)))) <= data_o(7 downto 0);
+						word_o((8*(to_integer(unsigned(out_counter))+1) - 1) downto (8*to_integer(unsigned(out_counter)))) <= data_o(9 downto 2);
 					else
 						out_counter <= x"0";
 						sig_word_send <= '1';
-						word_o(31 downto 24) <= data_o(7 downto 0);
+						word_o(31 downto 24) <= data_o(9 downto 2);
 					end if;
 				end if;
 						

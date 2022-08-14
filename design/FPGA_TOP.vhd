@@ -37,7 +37,46 @@ COMPONENT INIT_RAM is
 		finished : out std_logic
 	);
 END COMPONENT;
-	
+
+COMPONENT svga_controller is
+	generic ( 
+			mclk_freq : integer
+	);
+	port(
+	  -- FPGA internal
+    rst : in std_logic;
+    clk : in std_logic;
+	 
+	 --For FPGA to SDRAM write
+	 word_o : out std_logic_vector(31 downto 0); --Make sure to buffer this from above.
+	 word_send : out std_logic;
+	 word_address : out std_logic_vector(31 downto 0);
+
+	 --For HPS to FPGA write
+	 burst_size : in std_logic_vector(31 downto 0);
+	 burst_address : in std_logic_vector(31 downto 0);
+	 burst_start : in std_logic;
+	 
+	 --HPS to FPGA read / Poll
+	 --Will probably also need transfer start signal.
+	 transfer_complete : out std_logic;
+
+	 -- Interface
+	 mclk : out std_logic;
+	 data_i : in std_logic_vector(9 downto 0);
+	 HREF : in std_logic;
+	 MHSYNC : out std_logic;
+	 MVSYNC : out std_logic;
+	 
+	 --debug
+	 sampled_out : out std_logic_vector(15 downto 0);
+	 mode : in std_logic
+    );
+END COMPONENT;
+
+
+
+
 COMPONENT sccb_master is
 	 generic (
 				frequency : integer
@@ -56,18 +95,18 @@ COMPONENT sccb_master is
 );
 END COMPONENT;
 
-component scl_generator is
-    generic ( 
-        threshold : integer
-    );
-    port (
-        rst : in std_logic;
-        clk : in std_logic;
-        toggle : in std_logic;
-        scl_gen : out std_logic;
-        scl_quarter : out std_logic_vector(1 downto 0)
-		  );
-end component;
+--component scl_generator is
+--    generic ( 
+--        threshold : integer
+--    );
+--    port (
+--        rst : in std_logic;
+--        clk : in std_logic;
+--        toggle : in std_logic;
+--        scl_gen : out std_logic;
+--        scl_quarter : out std_logic_vector(1 downto 0)
+--		  );
+--end component;
 
 
 	signal rst_gen : std_logic;
@@ -115,8 +154,20 @@ end component;
 	signal led_array : std_logic_vector(7 downto 0);
 	signal counter : std_logic_vector(26 downto 0);
 	
-	TYPE State_type IS (IDLE, INIT, SENDING, SEND2, READING);
+	TYPE State_type IS (IDLE, INIT, SENDING, SEND2, READING, DATA);
 	SIGNAL State : State_Type;
+	
+	-- SVGA CONTROLLER
+	signal word_o : std_logic_vector(31 downto 0);
+	signal word_send : std_logic;
+	signal word_address : std_logic_vector(31 downto 0);
+
+	signal mode : std_logic; 
+	signal transfer_complete : std_logic;
+	signal burst_size : std_logic_vector(31 downto 0);
+	signal burst_address : std_logic_vector(31 downto 0); 
+	signal burst_start : std_logic;
+	signal sampled_out : std_logic_vector(15 downto 0);
 	
 begin
 
@@ -148,18 +199,40 @@ begin
 			sdata => cam_sdata,
 			sclk => cam_scl
 		);
+	SVGA_CONTROLLER0 : SVGA_CONTROLLER
 		
-	scl_generator1 : scl_generator
-		generic map (
-				threshold => (50000000/xclk_freq)
-				)
-		port map( 
-            rst => rst_gen,
-            clk => clk,
-            scl_gen => sig_xclk,
-            toggle => cam_clktoggle,
-            scl_quarter => cam_clkquarter
-		);	
+		generic map(
+			mclk_freq => 25000000 
+		)
+		PORT MAP (
+			clk => clk,
+			rst => rst_gen,
+			word_o => word_o,
+			word_send => word_send,
+			word_address => word_address,
+			data_i => cam_data,
+			mclk => cam_xclk,
+			HREF => cam_href,
+			MHSYNC => cam_reset,
+			MVSYNC => cam_pwdn,
+			mode => mode,
+			transfer_complete => transfer_complete,
+			burst_size => burst_size,
+			burst_address => burst_address,
+			burst_start => burst_start,
+			sampled_out => sampled_out	
+		);
+--	scl_generator1 : scl_generator
+--		generic map (
+--				threshold => (50000000/xclk_freq)
+--				)
+--		port map( 
+--            rst => rst_gen,
+--            clk => clk,
+--            scl_gen => sig_xclk,
+--            toggle => cam_clktoggle,
+--            scl_quarter => cam_clkquarter
+--		);	
 	
 
 	with rst_n select rst_gen <=
@@ -171,6 +244,7 @@ begin
 	led <= led_array;
 	--cam_scl <= sccb_sclk;
 	--cam_sdata <= sccb_sdata;
+	--led_array <= sampled_out(15 downto 8); --Test IF href still in slave mode.
 	led_array <= sccb_odata(7 downto 0);
 	--Pclk test
 	--led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
@@ -188,9 +262,20 @@ begin
 		sccb_wdata <= x"00";
 		sccb_enable <= '0';
 		counter <= (others => '0');
-		cam_reset <= '0';
-		cam_pwdn <= '0';
-		cam_clktoggle <= '0';
+		
+		--SVGA 
+
+		mode <= '0';
+		burst_size <= (others => '0');
+		burst_address <= (others => '0');		
+		burst_start <= '0';
+		
+		
+		
+		--
+--		cam_reset <= '0';
+--		cam_pwdn <= '0';
+--		cam_clktoggle <= '0';
 		STATE <= INIT;
 		pon_counter <= (others => '0');
 		poff_counter <= (others => '0');
@@ -232,7 +317,7 @@ begin
 				if(counter > 100000 / test_factor) then
 					counter <= (others => '0');
 					STATE <= SENDING;
-					cam_clktoggle <= '0';
+					--cam_clktoggle <= '0';
 					sccb_enable <= '0';
 					sccb_dev <= x"6" & "000";
 					sccb_rw <= '0';
@@ -241,9 +326,9 @@ begin
 		-- Fill in device registers and information
 					
 					counter <= counter + '1';
-					cam_reset <= '1';
-					cam_pwdn <= '0';
-					cam_clktoggle <= '0';
+--					cam_reset <= '1';
+--					cam_pwdn <= '0';
+--					cam_clktoggle <= '0';
 
 				end if;
 					
@@ -291,7 +376,7 @@ begin
 		  when READING =>
 				if(counter > 10000 / test_factor) then
 					counter <= (others => '0');
-					STATE <= IDLE;
+					STATE <= DATA;
 					sccb_enable <= '1';
 				elsif(counter = 5000) then
 					sccb_devreg <= x"0B";
@@ -309,7 +394,20 @@ begin
 					
 				end if;
 		  
-		  
+		 when DATA =>
+				counter <= counter + '1';
+				if(counter= 10000) then
+					STATE <= IDLE;
+				end if;
+				if(sccb_enable = '1') then
+					burst_size <= x"0000000A";
+					burst_address <= x"20000000";
+ 					burst_start <= '1';
+					sccb_enable <= '0';
+				else
+					burst_start <= '0';
+
+				end if;
 		 when OTHERS =>
 				sccb_enable <= '0';
 		 end case;
