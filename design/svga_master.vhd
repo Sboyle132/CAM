@@ -266,10 +266,13 @@ if(clk'event and clk='1') then
 				if(sample_next = '1') then
 					data_o <= data_i;
 					data_valid <= '1';
-					if (HREF = '1') then
-						sampled_count <= sampled_count + '1';
-						sampled_out <= sampled_count;
+					if(mclk_count = (VSYNC_LINES + VREAR_LINES + 500)) then
+						sampled_out(15 downto 6) <= (data_i);
 					end if;
+				--	if (HREF = '1') then
+					--	sampled_count <= sampled_count + '1';
+					--	sampled_out <= sampled_count;
+					--end if;
 				end if;
 			else
 				sampled_count <= (others => '0');

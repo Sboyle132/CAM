@@ -243,8 +243,8 @@ begin
 	led <= led_array;
 	--cam_scl <= sccb_sclk;
 	--cam_sdata <= sccb_sdata;
-	--led_array <= sampled_out(15 downto 8); --Test IF href still in slave mode.
-	led_array <= sccb_odata(7 downto 0);
+	led_array <= sampled_out(15 downto 8); --Test IF href still in slave mode.
+	--led_array <= cam_data(9 downto 2);
 	--Pclk test
 -- led_array <= pixel_check_1 & pixel_check_2; -- & "000000";
 
@@ -377,7 +377,12 @@ begin
 				if(counter > 10000 / test_factor) then
 					counter <= (others => '0');
 					STATE <= DATA;
-					sccb_enable <= '1';
+					sccb_enable <= '0';
+					
+					burst_size <= x"0000AAAA";
+					burst_address <= x"20000000";
+ 					burst_start <= '1';
+					
 				elsif(counter = 5000) then
 					sccb_devreg <= x"0B";
 					sccb_wdata <= x"00";
@@ -390,16 +395,15 @@ begin
 					counter <= counter + '1';
 					sccb_enable <= '0';
 
-
 					
 				end if;
 		  
 		 when DATA =>
 				counter <= counter + '1';
-				if(counter = 10000) then
-					--burst_size <= x"0000000A";
-					--burst_address <= x"20000000";
- 					--burst_start <= '1';
+				 burst_start <= '0';
+				if(counter = 50000000) then
+				   sccb_enable <= '1';
+
 					STATE <= IDLE;
 				end if;
 
