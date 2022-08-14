@@ -73,7 +73,9 @@ COMPONENT svga_master is
 	 data_i : in std_logic_vector(9 downto 0);
 	 HREF : in std_logic;
 	 MHSYNC : out std_logic;
-	 MVSYNC : out std_logic
+	 MVSYNC : out std_logic;
+	 --Debug
+	 sampled_out : out std_logic_vector(15 downto 0)
     );
 END COMPONENT;
 --Component signals of SVGA_MASTER
@@ -129,7 +131,8 @@ SVGA_MASTER0 : SVGA_MASTER
 			MVSYNC => sig_MVSYNC,
 			continue => continue,
 			frame_valid => frame_valid,
-			frame_end => frame_end
+			frame_end => frame_end,
+			sampled_out => sampled_out
 		);
 
 --Combinatorial MHSYNC, MVSYNC.
@@ -269,7 +272,9 @@ if(clk'event and clk='1') then
 					if(data_valid = '1' and frame_valid = '1') then
 						out_counter <= out_counter + '1';						
 							if(out_counter < (3 - to_integer(unsigned(x"0" + carryover_2)))) then
-								word_o((to_integer(unsigned(offset)) + (10*(to_integer(unsigned(out_counter))+1)-1)) downto (to_integer(unsigned(offset)) + (10*to_integer(unsigned(out_counter))))) <= data_o;
+								--word_o((to_integer(unsigned(offset +x"A"*(out_counter+'1') - '1'))) downto (to_integer(unsignedx"A"*(offset + (out_counter))))) <= data_o;
+								--This mode does not work. Fix above expression and it should.
+								--word_o((to_integer(unsigned(offset)) + (10*(to_integer(unsigned(out_counter))+1)-1)) downto (to_integer(unsigned(offset)) + (10*to_integer(unsigned(out_counter))))) <= data_o;
 							else
 								word_offset <= word_offset + '1';
 								out_counter <= x"0";

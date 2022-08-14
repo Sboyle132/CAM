@@ -550,7 +550,7 @@ begin
 					data <= x"ff01";
 				-- Custom 
 				when '1' & x"01" =>
-					data <= x"1140"; -- 00 MASTER -- 40 SLAVE
+					data <= x"1140"; -- 00 MASTER -- 40 SLAVE--
 				when '1' & x"02" =>
 					data <= x"0906"; -- 06 SLV MODE -- 02 MASTER
 				when '1' & x"03" =>

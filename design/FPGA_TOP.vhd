@@ -95,18 +95,18 @@ COMPONENT sccb_master is
 );
 END COMPONENT;
 
---component scl_generator is
---    generic ( 
---        threshold : integer
---    );
---    port (
---        rst : in std_logic;
---        clk : in std_logic;
---        toggle : in std_logic;
---        scl_gen : out std_logic;
---        scl_quarter : out std_logic_vector(1 downto 0)
---		  );
---end component;
+component scl_generator is
+    generic ( 
+        threshold : integer
+    );
+    port (
+        rst : in std_logic;
+        clk : in std_logic;
+        toggle : in std_logic;
+        scl_gen : out std_logic;
+        scl_quarter : out std_logic_vector(1 downto 0)
+		  );
+end component;
 
 
 	signal rst_gen : std_logic;
@@ -222,17 +222,17 @@ begin
 			burst_start => burst_start,
 			sampled_out => sampled_out	
 		);
---	scl_generator1 : scl_generator
---		generic map (
---				threshold => (50000000/xclk_freq)
---				)
---		port map( 
---            rst => rst_gen,
---            clk => clk,
---            scl_gen => sig_xclk,
---            toggle => cam_clktoggle,
---            scl_quarter => cam_clkquarter
---		);	
+	scl_generator1 : scl_generator
+		generic map (
+				threshold => (50000000/xclk_freq)
+				)
+		port map( 
+            rst => rst_gen,
+            clk => clk,
+          --  scl_gen => sig_xclk,
+            toggle => cam_clktoggle,
+            scl_quarter => cam_clkquarter
+		);	
 	
 
 	with rst_n select rst_gen <=
@@ -275,7 +275,7 @@ begin
 		--
 --		cam_reset <= '0';
 --		cam_pwdn <= '0';
---		cam_clktoggle <= '0';
+		cam_clktoggle <= '0';
 		STATE <= INIT;
 		pon_counter <= (others => '0');
 		poff_counter <= (others => '0');
@@ -317,7 +317,7 @@ begin
 				if(counter > 100000 / test_factor) then
 					counter <= (others => '0');
 					STATE <= SENDING;
-					--cam_clktoggle <= '0';
+					cam_clktoggle <= '0';
 					sccb_enable <= '0';
 					sccb_dev <= x"6" & "000";
 					sccb_rw <= '0';
@@ -328,7 +328,7 @@ begin
 					counter <= counter + '1';
 --					cam_reset <= '1';
 --					cam_pwdn <= '0';
---					cam_clktoggle <= '0';
+					cam_clktoggle <= '1';
 
 
 				end if;
@@ -397,20 +397,16 @@ begin
 		  
 		 when DATA =>
 				counter <= counter + '1';
-				if(counter= 10000) then
-					STATE <= IDLE;
-				end if;
-				if(sccb_enable = '1') then
+				if(counter = 10000) then
 					burst_size <= x"0000000A";
 					burst_address <= x"20000000";
- 					burst_start <= '1';
-					sccb_enable <= '0';
-				else
-					burst_start <= '0';
-
+ 					--burst_start <= '1';
+					STATE <= IDLE;
 				end if;
+
 		 when OTHERS =>
 				sccb_enable <= '0';
+				burst_start <= '0';
 		 end case;
 	
 	
