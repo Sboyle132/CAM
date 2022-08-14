@@ -147,7 +147,6 @@ end component;
 	signal config_addr : std_logic_vector(8 downto 0);
 	signal config_data : std_logic_vector(15 downto 0);
 	signal config_end : std_logic;
-	signal config_counter : std_logic;
 	
 	
 	-- TOP
@@ -202,7 +201,7 @@ begin
 	SVGA_CONTROLLER0 : SVGA_CONTROLLER
 		
 		generic map(
-			mclk_freq => 25000000 
+			mclk_freq => xclk_freq
 		)
 		PORT MAP (
 			clk => clk,
@@ -229,7 +228,7 @@ begin
 		port map( 
             rst => rst_gen,
             clk => clk,
-          --  scl_gen => sig_xclk,
+      --      scl_gen => sig_xclk,
             toggle => cam_clktoggle,
             scl_quarter => cam_clkquarter
 		);	
@@ -398,8 +397,8 @@ begin
 		 when DATA =>
 				counter <= counter + '1';
 				if(counter = 10000) then
-					burst_size <= x"0000000A";
-					burst_address <= x"20000000";
+					--burst_size <= x"0000000A";
+					--burst_address <= x"20000000";
  					--burst_start <= '1';
 					STATE <= IDLE;
 				end if;
