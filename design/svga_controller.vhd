@@ -206,7 +206,6 @@ if(clk'event and clk='1') then
 			sig_continue <= '0';
 			transfer_complete <= '0';
 	else
-		transfer_complete <= '0';
 		if(size > x"00000000") then
 			sig_continue <= '1';
 			if(sig_word_send = '1') then
@@ -221,6 +220,7 @@ if(clk'event and clk='1') then
 		elsif (burst_start = '1' and frame_valid = '0') then
 			address <= burst_address;
 			size <= burst_size;
+			transfer_complete <= '0';
 		else
 			sig_continue <= '0';
 		end if;

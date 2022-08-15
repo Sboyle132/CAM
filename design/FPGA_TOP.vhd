@@ -242,7 +242,7 @@ begin
 	cam_xclk <= sig_xclk;
 	led <= led_array;
 	--cam_scl <= sccb_sclk;
-	--cam_sdata <= sccb_sdata;
+    --cam_sdata <= sccb_sdata;
 	led_array <= sampled_out(15 downto 8); --Test IF href still in slave mode.
 	--led_array <= cam_data(9 downto 2);
 	--Pclk test
@@ -379,7 +379,7 @@ begin
 					STATE <= DATA;
 					sccb_enable <= '0';
 					
-					burst_size <= x"0000AAAA";
+					burst_size <= x"00000001";
 					burst_address <= x"20000000";
  					burst_start <= '1';
 					
