@@ -401,15 +401,21 @@ begin
 		 when DATA =>
 				counter <= counter + '1';
 				 burst_start <= '0';
-				if(counter = 50000000) then
+				if(counter = 100000) then
 				   sccb_enable <= '1';
 
 					STATE <= IDLE;
 				end if;
 
 		 when OTHERS =>
-				sccb_enable <= '0';
-				burst_start <= '0';
+		 		counter <= counter + '1';
+				if(counter = 1000000) then
+					sccb_enable <= '0';
+					burst_start <= '1';
+					burst_size <= x"0000000A";
+				else
+					burst_start <= '0';
+				end if;
 		 end case;
 	
 	
