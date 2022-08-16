@@ -1,8 +1,10 @@
  -- Quartus Prime VHDL Template
 -- Single port RAM with single read/write address 
 
-library ieee;
-use ieee.std_logic_1164.all;
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.numeric_std.all;
+use IEEE.std_logic_unsigned.all;
 
 entity DE10_NANO_SoC_GHRD is
     port 
@@ -209,7 +211,8 @@ constant test_sccb_mul : integer := 1;  --1  -- Good starting point is 50
 		signal sccb_enable : std_logic;
 		signal sccb_sclk : std_logic;
 		signal sccb_sdata : std_logic;
-
+		
+		signal rst_n : std_logic;
 		
 		--Internal
 		
@@ -229,7 +232,7 @@ with rst_n select rst_gen <=
 --clk <= FPGA_CLK1_50;
 
 LED <= sccb_odata;
-
+cam_xclk <= sig_xclk;
 
 
 
@@ -257,24 +260,6 @@ begin
 	elsif(clk'event and clk = '1') then
 	
 	--Testing PCLK
-	
-	if(cam_href = '1') then
-		if(sig_xclk = '0') then
-			poff_counter <= poff_counter + '1';
-			if(poff_counter > 25000000) then
-				poff_counter <= (others => '0');
-				pixel_check_2 <= pixel_check_2 + '1';
-			end if;
-		end if;
-		
-		if(sig_xclk = '1') then
-			pon_counter <= pon_counter + '1';
-			if(pon_counter > 25000000) then
-				pon_counter <= (others => '0');
-				pixel_check_1 <= pixel_check_1 + '1';
-			end if;
-		end if;
-	end if;
 		
 		
 		
@@ -282,8 +267,7 @@ begin
 
 		case(STATE) is
 		
-        when INIT =>	--led_array <= sccb_odata;
-	--cam_xclk <= cam_xclk
+        when INIT =>	
 		  
 				if(counter > 100000 / test_factor) then
 					counter <= (others => '0');
@@ -291,20 +275,11 @@ begin
 					sccb_enable <= '0';
 					sccb_dev <= x"6" & "000";
 					sccb_rw <= '0';
-					
-				else
-		-- Fill in device registers and information
-					
+				else					
 					counter <= counter + '1';
---					cam_reset <= '1';
---					cam_pwdn <= '0';
-					cam_clktoggle <= '1';
-
-
 				end if;
 					
 		  when SENDING =>
-				-- Fill in address change between sending / receiving on state change (probably '1')
 				if(counter > 10000 / test_factor) then
 					counter <= (others => '0');
 					
@@ -321,62 +296,31 @@ begin
 					sccb_wdata <= config_data(7 downto 0);
 					sccb_rw <= '0';
 					counter <= counter + '1';
-					
-
-
 				else
 					counter <= counter + '1';
 					sccb_enable <= '0';
-
-
-					
 				end if;
-				-- Fill in changes also.				sccb_enable <= '1';
---
---		  when SEND2 =>
---				if(counter > 50000000 / test_factor) then
---					STATE <= READING;
---					sccb_enable <= '1';
---				else
---					sccb_enable <= '0';
---					sccb_devreg <= x"12";
---					sccb_wdata <= x"40";
---					sccb_rw <= '0';
---				end if;
---				
+
 		  when READING =>
 				if(counter > 10000 / test_factor) then
 					counter <= (others => '0');
 					STATE <= DATA;
-					sccb_enable <= '0';
-					
-					burst_size <= x"00000001";
-					burst_address <= x"20000000";
- 					burst_start <= '1';
-					
+					sccb_enable <= '0';	
 				elsif(counter = 5000) then
 					sccb_devreg <= x"0B";
 					sccb_wdata <= x"00";
 					sccb_rw <= '1';
 					counter <= counter + '1';
-					
-
-
 				else
 					counter <= counter + '1';
 					sccb_enable <= '0';
-
-					
 				end if;
-		  
 		 when DATA =>
-				counter <= counter + '1';
-				
+				counter <= counter + '1';	
 				if(counter = 100000) then
 				   sccb_enable <= '1';
 					STATE <= IDLE;
 				end if;
-
 		 when OTHERS =>
 				sccb_enable <= '0';
 		 end case;
@@ -416,7 +360,7 @@ end process;
 		  svga_o_export0									  => word_send,
 		  svga_o_export1									  => word_address,
 		  svga_o_export2									  => word_o,
-		  svga_complete_export							  => transer_complete
+		  svga_complete_export							  => transfer_complete
 	 );
 	 
 	 
@@ -479,8 +423,6 @@ end process;
             toggle => cam_clktoggle,
             scl_quarter => cam_clkquarter
 		);	
-	 
-	 
 	 
 	 
 	 
